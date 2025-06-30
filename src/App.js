@@ -109,9 +109,26 @@ function App() {
   const [undoRecords, setUndoRecords] = useState([]);
 
   const [form, setForm] = useState(initialForm);
-  const [records, setRecords] = useState([]);
-  const [players, setPlayers] = useState(defaultPlayers);
+  // localStorageから初期値を取得
+  const [records, setRecords] = useState(() => {
+    const saved = localStorage.getItem('records');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [players, setPlayers] = useState(() => {
+    const saved = localStorage.getItem('players');
+    return saved ? JSON.parse(saved) : defaultPlayers;
+  });
   const [newPlayer, setNewPlayer] = useState('');
+
+  // records永続化
+  React.useEffect(() => {
+    localStorage.setItem('records', JSON.stringify(records));
+  }, [records]);
+
+  // players永続化
+  React.useEffect(() => {
+    localStorage.setItem('players', JSON.stringify(players));
+  }, [players]);
 
   // 成績CSVエクスポート
   const exportRecordsCSV = () => {
