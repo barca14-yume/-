@@ -113,10 +113,76 @@ function App() {
   const [players, setPlayers] = useState(defaultPlayers);
   const [newPlayer, setNewPlayer] = useState('');
 
+  // 成績CSVエクスポート
+  const exportRecordsCSV = () => {
+    if (records.length === 0) return;
+    // ヘッダー
+    const header = [
+      'player','opponent','date','pa','ab','result','hitType','rbi','run','sb','position','error'
+    ];
+    const rows = records.map(rec =>
+      header.map(h => rec[h] ?? '').join(',')
+    );
+    const csv = [header.join(','), ...rows].join('\r\n');
+    // UTF-8 BOM付き（Excel対応）
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 成績CSVインポート
+  const importRecordsCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let text = event.target.result;
+      // Excel保存でダブルクォート囲みや全角カンマ対応
+      text = text.replace(/\r\n/g, '\n');
+      const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+      if (lines.length < 2) return;
+      const header = lines[0].split(',');
+      const newRecords = lines.slice(1).map(line => {
+        const cols = line.split(',');
+        const rec = {};
+        header.forEach((h, i) => { rec[h] = cols[i] ?? ''; });
+        return rec;
+      });
+      setRecords(newRecords);
+    };
+    // Shift_JIS優先で読んでみる
+    try {
+      reader.readAsText(file, 'shift_jis');
+    } catch {
+      reader.readAsText(file, 'utf-8');
+    }
+  };
+
   // CSVエクスポート
   const exportPlayersCSV = () => {
-    const csv = players.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    // Shift_JISでエクスポート（Excel日本語環境向け）
+    let sjisArray;
+    if (window.TextEncoder && typeof window.TextEncoder === 'function') {
+      try {
+        sjisArray = new TextEncoder('shift-jis').encode(players.join('\r\n'));
+      } catch {
+        // TextEncoderがshift-jis非対応の場合はUTF-8+BOMでフォールバック
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        const csv = players.join('\r\n');
+        sjisArray = new Blob([bom, csv], { type: 'text/csv' });
+      }
+    } else {
+      // TextEncoderがない場合はUTF-8+BOMでフォールバック
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const csv = players.join('\r\n');
+      sjisArray = new Blob([bom, csv], { type: 'text/csv' });
+    }
+    const blob = sjisArray instanceof Blob ? sjisArray : new Blob([sjisArray], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -124,6 +190,7 @@ function App() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
 
   // CSVインポート
   const importPlayersCSV = (e) => {
@@ -135,8 +202,15 @@ function App() {
       const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
       setPlayers(lines);
     };
-    reader.readAsText(file);
+    // まずShift_JISで読んでみる（Excel保存CSV対応）
+    try {
+      reader.readAsText(file, 'shift_jis');
+    } catch {
+      // 失敗した場合はUTF-8で再読込
+      reader.readAsText(file, 'utf-8');
+    }
   };
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -460,6 +534,14 @@ function App() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mb-2 d-flex gap-2">
+        <button className="btn btn-outline-success btn-sm" onClick={exportRecordsCSV} disabled={records.length === 0}>成績CSV書き出し</button>
+        <label className="btn btn-outline-primary btn-sm mb-0">
+          成績CSV読み込み
+          <input type="file" accept=".csv" style={{display:'none'}} onChange={importRecordsCSV} />
+        </label>
       </div>
 
       <h4>選手別成績グラフ</h4>
