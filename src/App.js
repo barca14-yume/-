@@ -105,6 +105,8 @@ function calcStats(records) {
 } 
 
 function App() {
+  // 成績一覧の折りたたみ状態
+  const [isRecordsOpen, setIsRecordsOpen] = useState(true);
   const [editIndex, setEditIndex] = useState(null);
   const [undoRecords, setUndoRecords] = useState([]);
 
@@ -503,7 +505,84 @@ function App() {
         </table>
       </div>
 
-      <h4 className="mt-4">選手別通算成績</h4>
+      {/* 成績一覧 折りたたみトグル */}
+<div className="d-flex align-items-center mt-4 mb-2">
+  <h4 className="mb-0">成績一覧</h4>
+  <button
+    className="btn btn-link btn-sm ms-2"
+    onClick={() => setIsRecordsOpen(open => !open)}
+    aria-expanded={isRecordsOpen}
+    aria-controls="recordsTable"
+  >
+    {isRecordsOpen ? '▲ 折りたたむ' : '▼ 開く'}
+  </button>
+</div>
+
+{/* 成績テーブル本体 */}
+{isRecordsOpen && (
+  <div className="table-responsive" id="recordsTable">
+    <table className="table table-bordered">
+      <thead>
+        <tr>
+          <th>選手名</th>
+          <th>対戦相手</th>
+          <th>日付</th>
+          <th>打席</th>
+          <th>打数</th>
+          <th>結果</th>
+          <th>安打種類</th>
+          <th>打点</th>
+          <th>得点</th>
+          <th>盗塁</th>
+          <th>守備位置</th>
+          <th>失策</th>
+          <th>単打</th>
+          <th>二塁打</th>
+          <th>三塁打</th>
+          <th>本塁打</th>
+          <th>四球</th>
+          <th>死球</th>
+          <th>三振</th>
+          <th>打率</th>
+          <th>出塁率</th>
+        </tr>
+      </thead>
+      <tbody>
+        {records.map((rec, i) => (
+          <tr key={i}>
+            <td>{rec.player}</td>
+            <td>{rec.opponent}</td>
+            <td>{rec.date}</td>
+            <td>{rec.pa}</td>
+            <td>{rec.ab}</td>
+            <td>{rec.result}</td>
+            <td>{rec.hitType}</td>
+            <td>{rec.rbi}</td>
+            <td>{rec.run}</td>
+            <td>{rec.sb}</td>
+            <td>{rec.position}</td>
+            <td>{rec.error}</td>
+            <td>{rec.hitType === '単打' ? 1 : 0}</td>
+            <td>{rec.hitType === '二塁打' ? 1 : 0}</td>
+            <td>{rec.hitType === '三塁打' ? 1 : 0}</td>
+            <td>{rec.hitType === '本塁打' ? 1 : 0}</td>
+            <td>{rec.result === '四球' ? 1 : 0}</td>
+            <td>{rec.result === '死球' ? 1 : 0}</td>
+            <td>{rec.result === '三振' ? 1 : 0}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>
+              <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEditRecord(i)}>編集</button>
+              <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteRecord(i)}>削除</button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
+<h4 className="mt-4">選手別通算成績</h4>
       <div className="table-responsive">
         <table className="table table-striped table-bordered">
           <thead>
