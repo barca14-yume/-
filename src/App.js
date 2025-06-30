@@ -1,0 +1,482 @@
+import React, { useState } from 'react';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const initialForm = {
+  player: '',
+  opponent: '',
+  date: '',
+  pa: '',      // 打席
+  ab: '',      // 打数
+  result: '',  // 打席結果
+  hitType: '', // 安打種類
+  rbi: '',
+  run: '',
+  sb: '',      // 盗塁
+  position: '',// 守備位置
+  error: ''    // 失策
+};
+
+const defaultPlayers = [
+  '山田',
+  '佐藤',
+  '鈴木',
+  '田中',
+];
+
+function calcStats(records) {
+  // 選手ごとに集計
+  const stats = {};
+  records.forEach((rec) => {
+    if (!stats[rec.player]) {
+      stats[rec.player] = {
+        pa: 0, // 打席
+        ab: 0, // 打数
+        h: 0,  // 安打
+        bb: 0, // 四球
+        hbp: 0, // 死球
+        so: 0, // 三振
+        rbi: 0, // 打点
+        run: 0, // 得点
+        single: 0, // 単打
+        double: 0, // 二塁打
+        triple: 0, // 三塁打
+        hr: 0,     // 本塁打
+        sb: 0,     // 盗塁
+        error: 0,  // 失策
+        position: '', // 守備位置（最新値のみ）
+      };
+    }
+    // 打席
+    if (rec.result === '四球' || rec.result === '死球') {
+      stats[rec.player].pa += 1;
+    } else {
+      stats[rec.player].pa += Number(rec.pa || 1);
+    }
+    // 打数
+    if (rec.result === '四球' || rec.result === '死球') {
+      // 打数カウントしない
+    } else {
+      stats[rec.player].ab += Number(rec.ab || 1);
+    }
+    // 安打種類
+    if (rec.result === 'ヒット') {
+      stats[rec.player].h += 1;
+      if (rec.hitType === '単打') stats[rec.player].single += 1;
+      if (rec.hitType === '二塁打') stats[rec.player].double += 1;
+      if (rec.hitType === '三塁打') stats[rec.player].triple += 1;
+      if (rec.hitType === '本塁打') stats[rec.player].hr += 1;
+    } else if (rec.result === '四球') {
+      stats[rec.player].bb += 1;
+    } else if (rec.result === '死球') {
+      stats[rec.player].hbp += 1;
+    } else if (rec.result === '三振') {
+      stats[rec.player].so += 1;
+    }
+    // 打点
+    stats[rec.player].rbi += Number(rec.rbi || 0);
+    // 得点
+    stats[rec.player].run += Number(rec.run || 0);
+    // 盗塁
+    stats[rec.player].sb += Number(rec.sb || 0);
+    // 失策
+    stats[rec.player].error += Number(rec.error || 0);
+    // 守備位置（最新値を記録）
+    if (rec.position) stats[rec.player].position = rec.position;
+  });
+  // 出塁率・打率計算
+  Object.values(stats).forEach((s) => {
+    s.avg = s.ab > 0 ? (s.h / s.ab).toFixed(3) : '-';
+    // 四球・死球も出塁率に含める
+    s.obp = (s.ab + s.bb + s.hbp) > 0 ? ((s.h + s.bb + s.hbp) / (s.ab + s.bb + s.hbp)).toFixed(3) : '-';
+  });
+  return stats;
+} 
+
+function App() {
+  const [editIndex, setEditIndex] = useState(null);
+  const [undoRecords, setUndoRecords] = useState([]);
+
+  const [form, setForm] = useState(initialForm);
+  const [records, setRecords] = useState([]);
+  const [players, setPlayers] = useState(defaultPlayers);
+  const [newPlayer, setNewPlayer] = useState('');
+
+  // CSVエクスポート
+  const exportPlayersCSV = () => {
+    const csv = players.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'players.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // CSVインポート
+  const importPlayersCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      setPlayers(lines);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // 選手追加
+  const handleAddPlayer = (e) => {
+    e.preventDefault();
+    if (newPlayer && !players.includes(newPlayer)) {
+      setPlayers([...players, newPlayer]);
+      setNewPlayer('');
+    }
+  };
+  // 選手削除
+  const handleRemovePlayer = (name) => {
+    setPlayers(players.filter((p) => p !== name));
+    // フォームで選択中の選手が消された場合は空にする
+    if (form.player === name) setForm({ ...form, player: '' });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.player || !form.result) return;
+    // 打席・打数を自動計算
+    const autoPa = 1;
+    const autoAb = (form.result === '四球' || form.result === '死球') ? 0 : 1;
+    setUndoRecords([...undoRecords, records]); // 直前の状態を履歴に保存
+    if (editIndex !== null) {
+      // 編集時は該当indexを上書き
+      const updated = [...records];
+      updated[editIndex] = { ...form, pa: autoPa, ab: autoAb };
+      setRecords(updated);
+      setEditIndex(null);
+    } else {
+      setRecords([
+        ...records,
+        { ...form, pa: autoPa, ab: autoAb }
+      ]);
+    }
+    // setForm(initialForm); // 入力内容をクリアしない
+  };
+
+
+
+  // 過去入力の編集
+  const handleEditRecord = (idx) => {
+    setForm(records[idx]);
+    setEditIndex(idx);
+  };
+
+  // ひとつ前に戻す
+  const handleUndo = () => {
+    if (undoRecords.length > 0) {
+      setRecords(undoRecords[undoRecords.length - 1]);
+      setUndoRecords(undoRecords.slice(0, -1));
+    }
+  };
+
+  // 全成績削除
+  const handleDeleteAllRecords = () => {
+    if (window.confirm('本当に全成績を削除しますか？')) {
+      setUndoRecords([...undoRecords, records]);
+      setRecords([]);
+    }
+  };
+
+  // 単一成績削除
+  const handleDeleteRecord = (idx) => {
+    if (window.confirm('この成績を削除しますか？')) {
+      setUndoRecords([...undoRecords, records]);
+      setRecords(records.filter((_, i) => i !== idx));
+    }
+  };
+
+  const stats = calcStats(records);
+
+  // グラフ用データ
+  const barData = {
+    labels: players,
+    datasets: [
+      {
+        label: '安打',
+        data: players.map((p) => stats[p]?.h ?? 0),
+        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+      },
+      {
+        label: '打数',
+        data: players.map((p) => stats[p]?.ab ?? 0),
+        backgroundColor: 'rgba(255, 99, 132, 0.4)'
+      },
+      {
+        label: '四球',
+        data: players.map((p) => stats[p]?.bb ?? 0),
+        backgroundColor: 'rgba(255, 206, 86, 0.5)'
+      },
+      {
+        label: '三振',
+        data: players.map((p) => stats[p]?.so ?? 0),
+        backgroundColor: 'rgba(153, 102, 255, 0.4)'
+      },
+      {
+        label: '打点',
+        data: players.map((p) => stats[p]?.rbi ?? 0),
+        backgroundColor: 'rgba(75, 192, 192, 0.4)'
+      },
+      {
+        label: '得点',
+        data: players.map((p) => stats[p]?.run ?? 0),
+        backgroundColor: 'rgba(255, 159, 64, 0.4)'
+      }
+    ]
+  };
+
+  return (
+    <div className="container mt-4">
+      <h2>少年野球スコア集計システム</h2>
+      {/* 選手リスト編集エリア */}
+      <div className="mb-3">
+        <label className="form-label fw-bold">選手リスト編集</label>
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          {players.map((p) => (
+            <span key={p} className="badge bg-secondary me-2">
+              {p} <button type="button" className="btn-close btn-close-white btn-sm ms-1" aria-label="削除" style={{fontSize: '0.7em'}} onClick={() => handleRemovePlayer(p)}></button>
+            </span>
+          ))}
+          <div className="mb-3">
+            <form className="d-flex gap-2" onSubmit={handleAddPlayer}>
+              <input type="text" className="form-control" style={{ maxWidth: 200 }} value={newPlayer} onChange={(e) => setNewPlayer(e.target.value)} placeholder="新規選手名" />
+              <button type="submit" className="btn btn-success">追加</button>
+            </form>
+            <div className="mt-2 mb-2 d-flex gap-2">
+              <button className="btn btn-outline-primary btn-sm" onClick={exportPlayersCSV}>選手リストCSV書き出し</button>
+              <label className="btn btn-outline-secondary btn-sm mb-0">
+                CSV読み込み
+                <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={importPlayersCSV} />
+              </label>
+            </div>
+            <div className="mt-2">
+              {players.map((p) => (
+                <span key={p} className="badge bg-secondary me-2">
+                  {p}
+                  <button type="button" className="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" onClick={() => handleRemovePlayer(p)} style={{ fontSize: '0.7em', marginLeft: 4 }}></button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form className="row g-3 mb-4" onSubmit={handleSubmit}>
+        <div className="col-md-2">
+          <select className="form-select" name="player" value={form.player} onChange={handleChange} required>
+            <option value="">選手を選択</option>
+            {players.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-md-2">
+          <input type="text" className="form-control" name="opponent" value={form.opponent} onChange={handleChange} placeholder="対戦相手" />
+        </div>
+        <div className="col-md-2">
+          <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
+        </div>
+  <div className="col-md-2">
+    <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
+  </div>
+
+  <div className="col-md-2">
+    <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
+      <option value="">打席結果</option>
+      <option value="ヒット">ヒット</option>
+      <option value="四球">四球</option>
+      <option value="死球">死球</option>
+      <option value="三振">三振</option>
+      <option value="アウト">アウト</option>
+      <option value="エラー出塁">エラー出塁</option>
+    </select>
+  </div>
+  <div className="col-md-2">
+    <select className="form-select" name="hitType" value={form.hitType} onChange={handleChange} disabled={form.result !== 'ヒット'}>
+      <option value="">安打種類</option>
+      <option value="単打">単打</option>
+      <option value="二塁打">二塁打</option>
+      <option value="三塁打">三塁打</option>
+      <option value="本塁打">本塁打</option>
+    </select>
+  </div>
+  <div className="col-md-1">
+    <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
+  </div>
+  <div className="col-md-1">
+    <input type="number" className="form-control" name="run" value={form.run} onChange={handleChange} placeholder="得点" min="0" />
+  </div>
+  <div className="col-md-1">
+    <input type="number" className="form-control" name="sb" value={form.sb} onChange={handleChange} placeholder="盗塁" min="0" />
+  </div>
+  <div className="col-md-1">
+    <input type="text" className="form-control" name="position" value={form.position} onChange={handleChange} placeholder="守備位置" />
+  </div>
+  <div className="col-md-1">
+    <input type="number" className="form-control" name="error" value={form.error} onChange={handleChange} placeholder="失策" min="0" />
+  </div>
+  <div className="col-md-2 d-grid">
+    <button type="submit" className="btn btn-primary">追加</button>
+  </div>
+</form>
+
+
+      <div className="mb-2 d-flex gap-2">
+        <button className="btn btn-warning btn-sm" onClick={handleUndo} disabled={undoRecords.length === 0}>一つ前に戻す</button>
+        <button className="btn btn-danger btn-sm" onClick={handleDeleteAllRecords} disabled={records.length === 0}>全成績削除</button>
+      </div>
+      <h4>成績一覧</h4>
+      <div className="table-responsive">
+        <table className="table table-bordered">
+          <thead>
+  <tr>
+    <th>選手名</th>
+    <th>対戦相手</th>
+    <th>日付</th>
+    <th>打席</th>
+    <th>打数</th>
+    <th>結果</th>
+    <th>安打種類</th>
+    <th>打点</th>
+    <th>得点</th>
+    <th>盗塁</th>
+    <th>守備位置</th>
+    <th>失策</th>
+    <th>単打</th>
+    <th>二塁打</th>
+    <th>三塁打</th>
+    <th>本塁打</th>
+    <th>四球</th>
+    <th>死球</th>
+    <th>三振</th>
+    <th>打率</th>
+    <th>出塁率</th>
+  </tr>
+</thead>
+<tbody>
+  {records.map((rec, i) => (
+    <tr key={i}>
+      <td>{rec.player}</td>
+      <td>{rec.opponent}</td>
+      <td>{rec.date}</td>
+      <td>{rec.pa}</td>
+      <td>{rec.ab}</td>
+      <td>{rec.result}</td>
+      <td>{rec.hitType}</td>
+      <td>{rec.rbi}</td>
+      <td>{rec.run}</td>
+      <td>{rec.sb}</td>
+      <td>{rec.position}</td>
+      <td>{rec.error}</td>
+      <td>{rec.hitType === '単打' ? 1 : 0}</td>
+      <td>{rec.hitType === '二塁打' ? 1 : 0}</td>
+      <td>{rec.hitType === '三塁打' ? 1 : 0}</td>
+      <td>{rec.hitType === '本塁打' ? 1 : 0}</td>
+      <td>{rec.result === '四球' ? 1 : 0}</td>
+      <td>{rec.result === '死球' ? 1 : 0}</td>
+      <td>{rec.result === '三振' ? 1 : 0}</td>
+      <td>-</td>
+      <td>-</td>
+      <td>
+  <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEditRecord(i)}>編集</button>
+  <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteRecord(i)}>削除</button>
+</td>
+    </tr>
+  ))}
+</tbody>
+        </table>
+      </div>
+
+      <h4 className="mt-4">選手別通算成績</h4>
+      <div className="table-responsive">
+        <table className="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>選手名</th>
+              <th>打席</th>
+              <th>打数</th>
+              <th>安打</th>
+              <th>単打</th>
+              <th>二塁打</th>
+              <th>三塁打</th>
+              <th>本塁打</th>
+              <th>四球</th>
+              <th>死球</th>
+              <th>三振</th>
+              <th>打点</th>
+              <th>得点</th>
+              <th>盗塁</th>
+              <th>失策</th>
+              <th>打率</th>
+              <th>出塁率</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((p) => (
+              <tr key={p}>
+                <td>{p}</td>
+                <td>{stats[p]?.pa ?? 0}</td>
+                <td>{stats[p]?.ab ?? 0}</td>
+                <td>{stats[p]?.h ?? 0}</td>
+                <td>{stats[p]?.single ?? 0}</td>
+                <td>{stats[p]?.double ?? 0}</td>
+                <td>{stats[p]?.triple ?? 0}</td>
+                <td>{stats[p]?.hr ?? 0}</td>
+                <td>{stats[p]?.bb ?? 0}</td>
+                <td>{stats[p]?.hbp ?? 0}</td>
+                <td>{stats[p]?.so ?? 0}</td>
+                <td>{stats[p]?.rbi ?? 0}</td>
+                <td>{stats[p]?.run ?? 0}</td>
+                <td>{stats[p]?.sb ?? 0}</td>
+                <td>{stats[p]?.error ?? 0}</td>
+                <td>{stats[p]?.avg ?? '-'}</td>
+                <td>{stats[p]?.obp ?? '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h4>選手別成績グラフ</h4>
+      <div style={{ maxWidth: 900 }}>
+        <Bar
+          data={barData}
+          options={{
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              title: { display: true, text: '選手別成績' }
+            }
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
