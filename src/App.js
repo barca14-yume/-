@@ -559,6 +559,7 @@ function App() {
   <table className="table table-bordered table-sm">
     <thead>
       <tr>
+        <th>試合数</th>
         <th>チーム合計</th>
         <th>打席</th>
         <th>打数</th>
@@ -582,6 +583,8 @@ function App() {
     </thead>
     <tbody>
       <tr>
+        {/* 試合数: opponentの種類数 */}
+        <td>{Array.from(new Set(filteredRecords.map(r => r.opponent).filter(Boolean))).length}</td>
         <td>合計</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.pa)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.ab)||0), 0)}</td>
