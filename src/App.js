@@ -324,6 +324,22 @@ function App() {
   // フィルタ済みで集計
   const stats = calcStats(filteredRecords);
 
+  // 選手別成績の並べ替え
+  const [sortKey, setSortKey] = useState('pa'); // 初期は打席降順
+  const sortedPlayers = [...players].sort((a, b) => {
+    // 打率・出塁率は文字列"-"を最小扱いで数値ソート
+    const getValue = (p, key) => {
+      if (key === 'avg' || key === 'obp') return stats[p]?.[key] === '-' ? -1 : parseFloat(stats[p][key]);
+      if (key === 'player') return p;
+      return Number(stats[p]?.[key] ?? 0);
+    };
+    if (sortKey === 'player') {
+      // 名前は五十音順降順
+      return b.localeCompare(a, 'ja');
+    }
+    return getValue(b, sortKey) - getValue(a, sortKey);
+  });
+
   // グラフ用データ
   const barData = {
     labels: players,
@@ -614,29 +630,29 @@ function App() {
         <table className="table table-striped table-bordered">
           <thead>
             <tr>
-              <th>選手名</th>
-              <th>打席</th>
-              <th>打数</th>
-              <th>安打</th>
-              <th>単打</th>
-              <th>二塁打</th>
-              <th>三塁打</th>
-              <th>本塁打</th>
-              <th>四球</th>
-              <th>死球</th>
-              <th>空振三振</th>
-              <th>見逃三振</th>
-              <th>三振</th>
-              <th>打点</th>
-              <th>得点</th>
-              <th>盗塁</th>
-              <th>失策</th>
-              <th>打率</th>
-              <th>出塁率</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('player')}>選手名</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('pa')}>打席</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('ab')}>打数</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('h')}>安打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('single')}>単打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('double')}>二塁打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('triple')}>三塁打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('hr')}>本塁打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('bb')}>四球</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('hbp')}>死球</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('swingSo')}>空振三振</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('lookingSo')}>見逃三振</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('so')}>三振</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('rbi')}>打点</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('run')}>得点</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('sb')}>盗塁</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('error')}>失策</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('avg')}>打率</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('obp')}>出塁率</th>
             </tr>
           </thead>
           <tbody>
-            {players.map((p) => (
+            {sortedPlayers.map((p) => (
               <tr key={p}>
                 <td>{p}</td>
                 <td>{stats[p]?.pa ?? 0}</td>
