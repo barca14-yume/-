@@ -554,6 +554,59 @@ function App() {
   </select>
   <span className="ms-2 small text-secondary">※月を選ぶとその月だけの成績を表示</span>
 </div>
+{/* チーム合計成績テーブル */}
+<div className="table-responsive mb-3">
+  <table className="table table-bordered table-sm">
+    <thead>
+      <tr>
+        <th>チーム合計</th>
+        <th>打席</th>
+        <th>打数</th>
+        <th>安打</th>
+        <th>単打</th>
+        <th>二塁打</th>
+        <th>三塁打</th>
+        <th>本塁打</th>
+        <th>四球</th>
+        <th>死球</th>
+        <th>空振三振</th>
+        <th>見逃三振</th>
+        <th>三振</th>
+        <th>打点</th>
+        <th>得点</th>
+        <th>盗塁</th>
+        <th>失策</th>
+        <th>打率</th>
+        <th>出塁率</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>合計</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.pa)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.ab)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.h)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.single)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.double)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.triple)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.hr)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.bb)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.hbp)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.swingSo)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.lookingSo)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.so)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.rbi)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.run)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.sb)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.error)||0), 0)}</td>
+        {/* チーム打率・出塁率は全打数/全安打などで計算 */}
+        <td>{(() => {const ab=Object.values(stats).reduce((s, v)=>s+Number(v.ab||0),0);const h=Object.values(stats).reduce((s, v)=>s+Number(v.h||0),0);return ab>0?(h/ab).toFixed(3):'-'})()}</td>
+        <td>{(() => {const ab=Object.values(stats).reduce((s, v)=>s+Number(v.ab||0),0);const bb=Object.values(stats).reduce((s, v)=>s+Number(v.bb||0),0);const hbp=Object.values(stats).reduce((s, v)=>s+Number(v.hbp||0),0);const h=Object.values(stats).reduce((s, v)=>s+Number(v.h||0),0);return (ab+bb+hbp)>0?((h+bb+hbp)/(ab+bb+hbp)).toFixed(3):'-'})()}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 <div className="table-responsive">
         <table className="table table-striped table-bordered">
           <thead>
