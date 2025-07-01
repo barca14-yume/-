@@ -432,30 +432,47 @@ function App() {
         <div className="col-md-2">
           <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
         </div>
-      <option value="二塁打">二塁打</option>
-      <option value="三塁打">三塁打</option>
-      <option value="本塁打">本塁打</option>
-    </select>
-  </div>
-  <div className="col-md-1">
-    <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
-  </div>
-  <div className="col-md-1">
-    <input type="number" className="form-control" name="run" value={form.run} onChange={handleChange} placeholder="得点" min="0" />
-  </div>
-  <div className="col-md-1">
-    <input type="number" className="form-control" name="sb" value={form.sb} onChange={handleChange} placeholder="盗塁" min="0" />
-  </div>
-  <div className="col-md-1">
-    <input type="text" className="form-control" name="position" value={form.position} onChange={handleChange} placeholder="守備位置" />
-  </div>
-  <div className="col-md-1">
-    <input type="number" className="form-control" name="error" value={form.error} onChange={handleChange} placeholder="失策" min="0" />
-  </div>
-  <div className="col-md-2 d-grid">
-    <button type="submit" className="btn btn-primary">追加</button>
-  </div>
-</form>
+        <div className="col-md-2">
+          <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
+            <option value="">打席結果</option>
+            <option value="ヒット">ヒット</option>
+            <option value="四球">四球</option>
+            <option value="死球">死球</option>
+            <option value="空振三振">空振三振</option>
+            <option value="見逃三振">見逃三振</option>
+            <option value="三振">三振</option>
+            <option value="アウト">アウト</option>
+            <option value="エラー出塁">エラー出塁</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="hitType" value={form.hitType} onChange={handleChange} disabled={form.result !== 'ヒット'}>
+            <option value="">安打種類</option>
+            <option value="単打">単打</option>
+            <option value="二塁打">二塁打</option>
+            <option value="三塁打">三塁打</option>
+            <option value="本塁打">本塁打</option>
+          </select>
+        </div>
+        <div className="col-md-1">
+          <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
+        </div>
+        <div className="col-md-1">
+          <input type="number" className="form-control" name="run" value={form.run} onChange={handleChange} placeholder="得点" min="0" />
+        </div>
+        <div className="col-md-1">
+          <input type="number" className="form-control" name="sb" value={form.sb} onChange={handleChange} placeholder="盗塁" min="0" />
+        </div>
+        <div className="col-md-1">
+          <input type="text" className="form-control" name="position" value={form.position} onChange={handleChange} placeholder="守備位置" />
+        </div>
+        <div className="col-md-1">
+          <input type="number" className="form-control" name="error" value={form.error} onChange={handleChange} placeholder="失策" min="0" />
+        </div>
+        <div className="col-md-2 d-grid">
+          <button type="submit" className="btn btn-primary">追加</button>
+        </div>
+      </form>
 
 
       <div className="mb-2 d-flex gap-2">
