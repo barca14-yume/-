@@ -318,8 +318,20 @@ function App() {
   // 月別フィルタリスト作成
   const monthList = Array.from(new Set(records.map(r => r.date && r.date.length >= 7 ? r.date.slice(0,7) : null).filter(Boolean))).sort().reverse();
 
-  // フィルタ適用済みレコード
+  // 成績一覧テーブル用フィルタstate
+  const [recordPlayerFilter, setRecordPlayerFilter] = useState("");
+  const [recordOpponentFilter, setRecordOpponentFilter] = useState("");
+  const [recordDateFilter, setRecordDateFilter] = useState("");
+
+  // フィルタ適用済みレコード（月別）
   const filteredRecords = monthFilter === 'all' ? records : records.filter(r => r.date && r.date.startsWith(monthFilter));
+
+  // 成績一覧テーブル用のさらに詳細なフィルタ
+  const filteredRecordsForTable = filteredRecords.filter(r =>
+    (!recordPlayerFilter || r.player === recordPlayerFilter)
+    && (!recordOpponentFilter || r.opponent === recordOpponentFilter)
+    && (!recordDateFilter || r.date === recordDateFilter)
+  );
 
   // フィルタ済みで集計
   const stats = calcStats(filteredRecords);
@@ -491,8 +503,25 @@ function App() {
     {isRecordsOpen ? '▲ 折りたたむ' : '▼ 開く'}
   </button>
 </div>
+{/* フィルタUI追加 */}
+<div className="mb-2 d-flex gap-2 align-items-center">
+  <label className="mb-0">選手</label>
+  <select className="form-select form-select-sm" style={{width: 'auto'}} value={recordPlayerFilter} onChange={e => setRecordPlayerFilter(e.target.value)}>
+    <option value="">全員</option>
+    {players.map(p => <option key={p} value={p}>{p}</option>)}
+  </select>
+  <label className="mb-0">対戦相手</label>
+  <select className="form-select form-select-sm" style={{width: 'auto'}} value={recordOpponentFilter} onChange={e => setRecordOpponentFilter(e.target.value)}>
+    <option value="">全て</option>
+    {[...new Set(records.map(r => r.opponent).filter(Boolean))].map(op => <option key={op} value={op}>{op}</option>)}
+  </select>
+  <label className="mb-0">日付</label>
+  <select className="form-select form-select-sm" style={{width: 'auto'}} value={recordDateFilter} onChange={e => setRecordDateFilter(e.target.value)}>
+    <option value="">全て</option>
+    {[...new Set(records.map(r => r.date).filter(Boolean))].sort().map(date => <option key={date} value={date}>{date}</option>)}
+  </select>
+</div>
 
-{/* 成績テーブル本体 */}
 {isRecordsOpen && (
   <div className="table-responsive" id="recordsTable">
     <table className="table table-bordered">
@@ -524,7 +553,7 @@ function App() {
         </tr>
       </thead>
       <tbody>
-        {records.map((rec, i) => (
+        {filteredRecordsForTable.map((rec, i) => (
           <tr key={i}>
             <td>{rec.player}</td>
             <td>{rec.opponent}</td>
