@@ -432,14 +432,12 @@ function App() {
         <div className="col-md-2">
           <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
         </div>
-  <div className="col-md-2">
-    <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
-  </div>
 
-  <div className="col-md-2">
-    <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
-      <option value="">打席結果</option>
-      <option value="ヒット">ヒット</option>
+        <div className="col-md-2">
+          <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
+            <option value="">打席結果</option>
+            <option value="ヒット">ヒット</option>
+{{ ... }}
       <option value="四球">四球</option>
       <option value="死球">死球</option>
       <option value="空振三振">空振三振</option>
