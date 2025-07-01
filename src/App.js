@@ -432,25 +432,6 @@ function App() {
         <div className="col-md-2">
           <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
         </div>
-
-        <div className="col-md-2">
-          <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
-            <option value="">打席結果</option>
-            <option value="ヒット">ヒット</option>
-{{ ... }}
-      <option value="四球">四球</option>
-      <option value="死球">死球</option>
-      <option value="空振三振">空振三振</option>
-      <option value="見逃三振">見逃三振</option>
-      <option value="三振">三振</option>
-      <option value="アウト">アウト</option>
-      <option value="エラー出塁">エラー出塁</option>
-    </select>
-  </div>
-  <div className="col-md-2">
-    <select className="form-select" name="hitType" value={form.hitType} onChange={handleChange} disabled={form.result !== 'ヒット'}>
-      <option value="">安打種類</option>
-      <option value="単打">単打</option>
       <option value="二塁打">二塁打</option>
       <option value="三塁打">三塁打</option>
       <option value="本塁打">本塁打</option>
