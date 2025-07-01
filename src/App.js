@@ -404,6 +404,8 @@ function App() {
       <option value="ヒット">ヒット</option>
       <option value="四球">四球</option>
       <option value="死球">死球</option>
+      <option value="空振三振">空振三振</option>
+      <option value="見逃三振">見逃三振</option>
       <option value="三振">三振</option>
       <option value="アウト">アウト</option>
       <option value="エラー出塁">エラー出塁</option>
