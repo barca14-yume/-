@@ -312,7 +312,17 @@ function App() {
     }
   };
 
-  const stats = calcStats(records);
+  // 月別フィルタ用 state
+  const [monthFilter, setMonthFilter] = useState('all'); // 'all' or 'YYYY-MM'
+
+  // 月別フィルタリスト作成
+  const monthList = Array.from(new Set(records.map(r => r.date && r.date.length >= 7 ? r.date.slice(0,7) : null).filter(Boolean))).sort().reverse();
+
+  // フィルタ適用済みレコード
+  const filteredRecords = monthFilter === 'all' ? records : records.filter(r => r.date && r.date.startsWith(monthFilter));
+
+  // フィルタ済みで集計
+  const stats = calcStats(filteredRecords);
 
   // グラフ用データ
   const barData = {
@@ -534,8 +544,17 @@ function App() {
   </div>
 )}
 
-<h4 className="mt-4">選手別通算成績</h4>
-      <div className="table-responsive">
+<div className="d-flex align-items-center mt-4 mb-2">
+  <h4 className="mb-0">選手別通算成績</h4>
+  <select className="form-select form-select-sm ms-3" style={{width: 'auto'}} value={monthFilter} onChange={e => setMonthFilter(e.target.value)}>
+    <option value="all">全期間</option>
+    {monthList.map(m => (
+      <option key={m} value={m}>{m.replace('-', '年')}月</option>
+    ))}
+  </select>
+  <span className="ms-2 small text-secondary">※月を選ぶとその月だけの成績を表示</span>
+</div>
+<div className="table-responsive">
         <table className="table table-striped table-bordered">
           <thead>
             <tr>
