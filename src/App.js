@@ -47,6 +47,8 @@ function calcStats(records) {
         bb: 0, // 四球
         hbp: 0, // 死球
         so: 0, // 三振
+        swingSo: 0, // 空振三振
+        lookingSo: 0, // 見逃三振
         rbi: 0, // 打点
         run: 0, // 得点
         single: 0, // 単打
@@ -83,6 +85,12 @@ function calcStats(records) {
       stats[rec.player].hbp += 1;
     } else if (rec.result === '三振') {
       stats[rec.player].so += 1;
+    } else if (rec.result === '空振三振') {
+      stats[rec.player].so += 1;
+      stats[rec.player].swingSo += 1;
+    } else if (rec.result === '見逃三振') {
+      stats[rec.player].so += 1;
+      stats[rec.player].lookingSo += 1;
     }
     // 打点
     stats[rec.player].rbi += Number(rec.rbi || 0);
@@ -482,6 +490,8 @@ function App() {
           <th>本塁打</th>
           <th>四球</th>
           <th>死球</th>
+          <th>空振三振</th>
+          <th>見逃三振</th>
           <th>三振</th>
           <th>打率</th>
           <th>出塁率</th>
@@ -508,6 +518,8 @@ function App() {
             <td>{rec.hitType === '本塁打' ? 1 : 0}</td>
             <td>{rec.result === '四球' ? 1 : 0}</td>
             <td>{rec.result === '死球' ? 1 : 0}</td>
+            <td>{rec.result === '空振三振' ? 1 : 0}</td>
+            <td>{rec.result === '見逃三振' ? 1 : 0}</td>
             <td>{rec.result === '三振' ? 1 : 0}</td>
             <td>-</td>
             <td>-</td>
@@ -537,6 +549,8 @@ function App() {
               <th>本塁打</th>
               <th>四球</th>
               <th>死球</th>
+              <th>空振三振</th>
+              <th>見逃三振</th>
               <th>三振</th>
               <th>打点</th>
               <th>得点</th>
@@ -559,6 +573,8 @@ function App() {
                 <td>{stats[p]?.hr ?? 0}</td>
                 <td>{stats[p]?.bb ?? 0}</td>
                 <td>{stats[p]?.hbp ?? 0}</td>
+                <td>{stats[p]?.swingSo ?? 0}</td>
+                <td>{stats[p]?.lookingSo ?? 0}</td>
                 <td>{stats[p]?.so ?? 0}</td>
                 <td>{stats[p]?.rbi ?? 0}</td>
                 <td>{stats[p]?.run ?? 0}</td>
