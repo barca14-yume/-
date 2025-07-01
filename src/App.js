@@ -329,9 +329,13 @@ function App() {
   const sortedPlayers = [...players].sort((a, b) => {
     // 打率・出塁率は文字列"-"を最小扱いで数値ソート
     const getValue = (p, key) => {
-      if (key === 'avg' || key === 'obp') return stats[p]?.[key] === '-' ? -1 : parseFloat(stats[p][key]);
+      if (!stats[p]) {
+        if (key === 'player') return p;
+        return -1; // 数値系は最小扱い
+      }
+      if (key === 'avg' || key === 'obp') return stats[p][key] === '-' ? -1 : parseFloat(stats[p][key]);
       if (key === 'player') return p;
-      return Number(stats[p]?.[key] ?? 0);
+      return Number(stats[p][key] ?? 0);
     };
     if (sortKey === 'player') {
       // 名前は五十音順降順
