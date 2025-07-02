@@ -668,6 +668,19 @@ function App() {
             <option value="本塁打">本塁打</option>
           </select>
         </div>
+        {(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁') && (
+          <div className="col-md-2">
+            <select className="form-select" name="battedDirection" value={form.battedDirection} onChange={handleChange}>
+              <option value="">打球方向</option>
+              <option value="右前">右前</option>
+              <option value="右奥">右奥</option>
+              <option value="中前">中前</option>
+              <option value="中奥">中奥</option>
+              <option value="左前">左前</option>
+              <option value="左奥">左奥</option>
+            </select>
+          </div>
+        )}
         <div className="col-md-1">
           <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
         </div>
@@ -765,6 +778,7 @@ function App() {
             <td>{rec.ab}</td>
             <td>{rec.result}</td>
             <td>{rec.hitType}</td>
+<td>{rec.battedDirection}</td>
             <td>{rec.rbi}</td>
             <td>{rec.run}</td>
             <td>{rec.sb}</td>

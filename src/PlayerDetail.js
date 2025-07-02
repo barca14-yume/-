@@ -39,7 +39,8 @@ function PlayerDetail({ players, stats, records }) {
       <table className="table table-sm table-bordered">
         <thead>
           <tr>
-            <th>日付</th><th>対戦相手</th><th>打席</th><th>打数</th><th>結果</th><th>安打種類</th><th>打点</th><th>得点</th>
+            <th>日付</th><th>対戦相手</th><th>打席</th><th>打数</th><th>結果</th><th>安打種類</th>
+<th>打球方向</th><th>打点</th><th>得点</th>
           </tr>
         </thead>
         <tbody>
@@ -51,6 +52,7 @@ function PlayerDetail({ players, stats, records }) {
               <td>{rec.ab}</td>
               <td>{rec.result}</td>
               <td>{rec.hitType}</td>
+<td>{rec.battedDirection}</td>
               <td>{rec.rbi}</td>
               <td>{rec.run}</td>
             </tr>
