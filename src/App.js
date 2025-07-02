@@ -983,8 +983,13 @@ function App() {
           ))}
         </select>
         <span className="ms-2 small text-secondary">※月を選ぶとその月だけの成績を表示</span>
-        <button className="btn btn-sm btn-outline-secondary ms-3" type="button" onClick={() => setIsPitcherStatsOpen(v => !v)}>
-          {isPitcherStatsOpen ? '− 閉じる' : '+ 開く'}
+        <button
+          className="btn btn-link btn-sm ms-2"
+          onClick={() => setIsPitcherStatsOpen(open => !open)}
+          aria-expanded={isPitcherStatsOpen}
+          aria-controls="pitcherStatsTable"
+        >
+          {isPitcherStatsOpen ? '▲ 折りたたむ' : '▼ 開く'}
         </button>
       </div>
       {/* チーム合計テーブル */}
@@ -1093,8 +1098,13 @@ function App() {
       {/* 投手成績入力履歴 折りたたみ */}
       <div className="d-flex align-items-center mt-4 mb-2">
         <h5 className="mb-0">投手試合ごとの成績</h5>
-        <button className="btn btn-sm btn-outline-secondary ms-3" type="button" onClick={() => setIsPitcherRecordsOpen(v => !v)}>
-          {isPitcherRecordsOpen ? '− 閉じる' : '+ 開く'}
+        <button
+          className="btn btn-link btn-sm ms-2"
+          onClick={() => setIsPitcherRecordsOpen(open => !open)}
+          aria-expanded={isPitcherRecordsOpen}
+          aria-controls="pitcherRecordsTable"
+        >
+          {isPitcherRecordsOpen ? '▲ 折りたたむ' : '▼ 開く'}
         </button>
       </div>
       {isPitcherRecordsOpen && (
