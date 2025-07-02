@@ -306,12 +306,11 @@ function App() {
     localStorage.setItem('players', JSON.stringify(players));
   }, [players]);
 
-  // 成績CSVエクスポート
   const exportRecordsCSV = () => {
     if (records.length === 0) return;
     // ヘッダー
     const header = [
-      'player','opponent','date','pa','ab','result','hitType','rbi','run','sb','position','error'
+      'player','opponent','date','pa','ab','result','hitType','rbi','battedDirection','run','sb','position','error'
     ];
     const rows = records.map(rec =>
       header.map(h => rec[h] ?? '').join(',')
