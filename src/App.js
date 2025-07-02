@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import PlayerDetail from './PlayerDetail';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -599,7 +601,10 @@ function App() {
   };
 
   return (
-    <div className="container mt-4">
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          <div className="container mt-4">
       <h2>2025シーズン個人成績</h2>
       {/* 選手リスト編集エリア */}
       <div className="mb-3">
@@ -749,7 +754,7 @@ function App() {
       <tbody>
         {filteredRecordsForTable.map((rec, i) => (
           <tr key={i}>
-            <td>{rec.player}</td>
+            <td><Link to={`/player/${encodeURIComponent(rec.player)}`}>{rec.player}</Link></td>
             <td>{rec.opponent}</td>
             <td>{rec.date}</td>
             <td>{rec.pa}</td>
