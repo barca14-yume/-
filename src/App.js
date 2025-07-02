@@ -142,6 +142,25 @@ function calcPitcherStats(records) {
   return stats;
 }
 
+// 投球回合計を0.1=1/3, 0.2=2/3, 0.3で1回繰り上げで集計して表示
+function formatInningsSum(inningsArr) {
+  let total = 0;
+  let fraction = 0;
+  inningsArr.forEach(val => {
+    const n = Number(val) || 0;
+    const intPart = Math.floor(n);
+    let fracPart = Math.round((n - intPart) * 10); // 0,1,2
+    total += intPart;
+    fraction += fracPart;
+  });
+  total += Math.floor(fraction / 3);
+  fraction = fraction % 3;
+  let fracStr = '';
+  if (fraction === 1) fracStr = '.1';
+  else if (fraction === 2) fracStr = '.2';
+  return total + fracStr;
+}
+
 function App() {
   // 投手通算成績の折りたたみ状態
   const [isPitcherStatsOpen, setIsPitcherStatsOpen] = useState(true);
@@ -908,7 +927,7 @@ function App() {
               {/* チーム合計行 */}
               <tr style={{background:'#f9f9f9',fontWeight:'bold'}}>
                 <td>チーム合計</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.innings||0),0)}</td>
+                <td>{formatInningsSum(Object.values(calcPitcherStats(pitcherRecords)).map(b=>b.innings))}</td>
                 <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.pitches||0),0)}</td>
                 <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.batters||0),0)}</td>
                 <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.hits||0),0)}</td>
@@ -926,7 +945,7 @@ function App() {
               {Object.entries(calcPitcherStats(pitcherRecords)).map(([p, s]) => (
                 <tr key={p}>
                   <td>{p}</td>
-                  <td>{s.innings}</td>
+                  <td>{formatInningsSum([s.innings])}</td>
                   <td>{s.pitches}</td>
                   <td>{s.batters}</td>
                   <td>{s.hits}</td>
