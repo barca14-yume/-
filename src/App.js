@@ -164,7 +164,7 @@ function formatInningsSum(inningsArr) {
 }
 
 function App() {
-  // pitcherRecords（投手成績）を最初にuseStateで初期化
+  // ここに全てのuseStateやロジックを配置
   const [pitcherRecords, setPitcherRecords] = useState(() => {
     const saved = localStorage.getItem('pitcherRecords');
     return saved ? JSON.parse(saved) : [];
@@ -847,8 +847,22 @@ function App() {
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.sb)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.error)||0), 0)}</td>
         {/* チーム打率・出塁率は全打数/全安打などで計算 */}
-        <td>{(() => {const ab=Object.values(stats).reduce((s, v)=>s+Number(v.ab||0),0);const h=Object.values(stats).reduce((s, v)=>s+Number(v.h||0),0);return ab>0?(h/ab).toFixed(3):'-'})()}</td>
-        <td>{(() => {const ab=Object.values(stats).reduce((s, v)=>s+Number(v.ab||0),0);const bb=Object.values(stats).reduce((s, v)=>s+Number(v.bb||0),0);const hbp=Object.values(stats).reduce((s, v)=>s+Number(v.hbp||0),0);const h=Object.values(stats).reduce((s, v)=>s+Number(v.h||0),0);return (ab+bb+hbp)>0?((h+bb+hbp)/(ab+bb+hbp)).toFixed(3):'-'})()}</td>
+        <td>
+  {(() => {
+    const ab = Object.values(stats).reduce((s, v) => s + Number(v.ab || 0), 0);
+    const h = Object.values(stats).reduce((s, v) => s + Number(v.h || 0), 0);
+    return ab > 0 ? (h / ab).toFixed(3) : '-';
+  })()}
+</td>
+        <td>
+  {(() => {
+    const ab = Object.values(stats).reduce((s, v) => s + Number(v.ab || 0), 0);
+    const bb = Object.values(stats).reduce((s, v) => s + Number(v.bb || 0), 0);
+    const hbp = Object.values(stats).reduce((s, v) => s + Number(v.hbp || 0), 0);
+    const h = Object.values(stats).reduce((s, v) => s + Number(v.h || 0), 0);
+    return (ab + bb + hbp) > 0 ? ((h + bb + hbp) / (ab + bb + hbp)).toFixed(3) : '-';
+  })()}
+</td>
       </tr>
     </tbody>
   </table>
@@ -1028,15 +1042,15 @@ function App() {
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.runs||0),0)}</td>
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.er||0),0)}</td>
                 {/* チーム合計防御率計算 */}
-                {(() => {
+                <td>{(() => {
                   const totalInn = Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.innings||0),0);
                   const intPart = Math.floor(totalInn);
                   const fracPart = Math.round((totalInn-intPart)*10);
                   const ip = intPart + fracPart/3;
                   const totalEr = Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.er||0),0);
                   const era = ip > 0 ? (totalEr*9/ip).toFixed(2) : '-';
-                  return <td>{era}</td>;
-                })()}
+                  return era;
+                })()}</td>
               </tr>
             </tbody>
           </table>
@@ -1059,11 +1073,8 @@ function App() {
               {pitcherSortedKeys.map(p => {
                 // 防御率計算
                 const inn = Number(pitcherStats[p].innings || 0);
-                const intPart = Math.floor(inn);
-                const fracPart = Math.round((inn - intPart) * 10);
-                const ip = intPart + fracPart / 3;
                 const er = Number(pitcherStats[p].er || 0);
-                const era = ip > 0 ? (er * 9 / ip).toFixed(2) : '-';
+                const era = inn > 0 ? ((er * 9) / inn).toFixed(2) : '-';
                 return (
                   <tr key={p}>
                     <td>{p}</td>
@@ -1136,6 +1147,9 @@ function App() {
         </div>
       )}
     </div>
+        } />
+      </Routes>
+    </Router>
   );
 }
 
