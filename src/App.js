@@ -112,6 +112,36 @@ function calcStats(records) {
   return stats;
 } 
 
+// 投手成績用初期データ
+const initialPitcherForm = {
+  pitcher: '', innings: '', pitches: '', batters: '', hits: '', hr: '', so: '', bb: '', hbp: '', wp: '', pb: '', bk: '', runs: '', er: ''
+};
+
+function calcPitcherStats(records) {
+  const stats = {};
+  records.forEach((rec) => {
+    if (!stats[rec.pitcher]) {
+      stats[rec.pitcher] = {
+        innings: 0, pitches: 0, batters: 0, hits: 0, hr: 0, so: 0, bb: 0, hbp: 0, wp: 0, pb: 0, bk: 0, runs: 0, er: 0
+      };
+    }
+    stats[rec.pitcher].innings += Number(rec.innings || 0);
+    stats[rec.pitcher].pitches += Number(rec.pitches || 0);
+    stats[rec.pitcher].batters += Number(rec.batters || 0);
+    stats[rec.pitcher].hits += Number(rec.hits || 0);
+    stats[rec.pitcher].hr += Number(rec.hr || 0);
+    stats[rec.pitcher].so += Number(rec.so || 0);
+    stats[rec.pitcher].bb += Number(rec.bb || 0);
+    stats[rec.pitcher].hbp += Number(rec.hbp || 0);
+    stats[rec.pitcher].wp += Number(rec.wp || 0);
+    stats[rec.pitcher].pb += Number(rec.pb || 0);
+    stats[rec.pitcher].bk += Number(rec.bk || 0);
+    stats[rec.pitcher].runs += Number(rec.runs || 0);
+    stats[rec.pitcher].er += Number(rec.er || 0);
+  });
+  return stats;
+}
+
 function App() {
   // 成績一覧の折りたたみ状態
   const [isRecordsOpen, setIsRecordsOpen] = useState(true);
@@ -119,6 +149,52 @@ function App() {
   const [undoRecords, setUndoRecords] = useState([]);
 
   const [form, setForm] = useState(initialForm);
+  // 投手データ
+  const [pitcherForm, setPitcherForm] = useState(initialPitcherForm);
+  const [pitcherRecords, setPitcherRecords] = useState(() => {
+    const saved = localStorage.getItem('pitcherRecords');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [pitchers, setPitchers] = useState(() => {
+    const saved = localStorage.getItem('pitchers');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newPitcher, setNewPitcher] = useState('');
+
+  // 投手データlocalStorage保存
+  React.useEffect(() => {
+    localStorage.setItem('pitcherRecords', JSON.stringify(pitcherRecords));
+  }, [pitcherRecords]);
+  React.useEffect(() => {
+    localStorage.setItem('pitchers', JSON.stringify(pitchers));
+  }, [pitchers]);
+
+  // 投手フォーム変更
+  const handlePitcherFormChange = (e) => {
+    setPitcherForm({ ...pitcherForm, [e.target.name]: e.target.value });
+  };
+  // 投手成績追加
+  const handleAddPitcherRecord = (e) => {
+    e.preventDefault();
+    if (!pitcherForm.pitcher) return;
+    setPitcherRecords([...pitcherRecords, pitcherForm]);
+    setPitcherForm(initialPitcherForm);
+  };
+  // 投手記録削除
+  const handleDeletePitcherRecord = (idx) => {
+    if (window.confirm('この投手成績を削除しますか？')) {
+      setPitcherRecords(pitcherRecords.filter((_, i) => i !== idx));
+    }
+  };
+  // 投手名追加
+  const handleAddPitcher = (e) => {
+    e.preventDefault();
+    if (newPitcher && !pitchers.includes(newPitcher)) {
+      setPitchers([...pitchers, newPitcher]);
+      setNewPitcher('');
+    }
+  };
+
   // localStorageから初期値を取得
   const [records, setRecords] = useState(() => {
     const saved = localStorage.getItem('records');
@@ -728,6 +804,99 @@ function App() {
             }
           }}
         />
+      </div>
+
+      {/* 投手成績入力フォーム */}
+      <h4 className="mt-4">投手成績入力</h4>
+      <form className="row g-2 align-items-end mb-3" onSubmit={handleAddPitcherRecord}>
+        <div className="col-auto">
+          <select className="form-select" name="pitcher" value={pitcherForm.pitcher} onChange={handlePitcherFormChange} required>
+            <option value="">投手名</option>
+            {pitchers.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-auto"><input className="form-control" name="innings" type="number" min="0" step="0.1" placeholder="投球回" value={pitcherForm.innings} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="pitches" type="number" min="0" placeholder="球数" value={pitcherForm.pitches} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="batters" type="number" min="0" placeholder="打者" value={pitcherForm.batters} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="hits" type="number" min="0" placeholder="安打" value={pitcherForm.hits} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="hr" type="number" min="0" placeholder="本塁打" value={pitcherForm.hr} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="so" type="number" min="0" placeholder="三振" value={pitcherForm.so} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="bb" type="number" min="0" placeholder="四球" value={pitcherForm.bb} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="hbp" type="number" min="0" placeholder="死球" value={pitcherForm.hbp} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="wp" type="number" min="0" placeholder="暴投" value={pitcherForm.wp} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="pb" type="number" min="0" placeholder="捕逸" value={pitcherForm.pb} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="bk" type="number" min="0" placeholder="ボーク" value={pitcherForm.bk} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="runs" type="number" min="0" placeholder="失点" value={pitcherForm.runs} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="er" type="number" min="0" placeholder="自責点" value={pitcherForm.er} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><button className="btn btn-primary" type="submit">追加</button></div>
+      </form>
+      {/* 投手名追加フォーム */}
+      <form className="row g-2 align-items-end mb-3" onSubmit={handleAddPitcher}>
+        <div className="col-auto"><input className="form-control" type="text" placeholder="新しい投手名" value={newPitcher} onChange={e => setNewPitcher(e.target.value)} /></div>
+        <div className="col-auto"><button className="btn btn-outline-primary" type="submit">投手追加</button></div>
+      </form>
+      {/* 投手成績テーブル */}
+      <div className="table-responsive">
+        <table className="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>投手名</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(calcPitcherStats(pitcherRecords)).map(([p, s]) => (
+              <tr key={p}>
+                <td>{p}</td>
+                <td>{s.innings}</td>
+                <td>{s.pitches}</td>
+                <td>{s.batters}</td>
+                <td>{s.hits}</td>
+                <td>{s.hr}</td>
+                <td>{s.so}</td>
+                <td>{s.bb}</td>
+                <td>{s.hbp}</td>
+                <td>{s.wp}</td>
+                <td>{s.pb}</td>
+                <td>{s.bk}</td>
+                <td>{s.runs}</td>
+                <td>{s.er}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* 投手成績入力履歴 */}
+      <div className="table-responsive">
+        <table className="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>投手名</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {pitcherRecords.map((rec, i) => (
+              <tr key={i}>
+                <td>{rec.pitcher}</td>
+                <td>{rec.innings}</td>
+                <td>{rec.pitches}</td>
+                <td>{rec.batters}</td>
+                <td>{rec.hits}</td>
+                <td>{rec.hr}</td>
+                <td>{rec.so}</td>
+                <td>{rec.bb}</td>
+                <td>{rec.hbp}</td>
+                <td>{rec.wp}</td>
+                <td>{rec.pb}</td>
+                <td>{rec.bk}</td>
+                <td>{rec.runs}</td>
+                <td>{rec.er}</td>
+                <td><button className="btn btn-danger btn-sm" onClick={() => handleDeletePitcherRecord(i)}>削除</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
