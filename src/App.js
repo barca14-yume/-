@@ -162,6 +162,73 @@ function formatInningsSum(inningsArr) {
 }
 
 function App() {
+  // pitcherRecords（投手成績）を最初にuseStateで初期化
+  const [pitcherRecords, setPitcherRecords] = useState(() => {
+    const saved = localStorage.getItem('pitcherRecords');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 投手成績 期間フィルタ状態
+  const [pitcherMonthFilter, setPitcherMonthFilter] = useState('all');
+  // 投手成績 月リスト生成
+  const getPitcherMonthList = (records) => {
+    const months = Array.from(new Set(records.map(r => (r.date||'').slice(0,7)).filter(Boolean)));
+    months.sort();
+    return months;
+  };
+  // 投手成績 月リスト
+  const pitcherMonthList = getPitcherMonthList(pitcherRecords);
+  // 投手成績 フィルタ適用
+  const pitcherFilteredRecords = pitcherMonthFilter === 'all' ? pitcherRecords : pitcherRecords.filter(r => (r.date||'').slice(0,7) === pitcherMonthFilter);
+
+  // 投手成績 並べ替え状態
+  const [pitcherSortKey, setPitcherSortKey] = useState('innings');
+  const [pitcherSortAsc, setPitcherSortAsc] = useState(false);
+  // ソートハンドラ
+  const handlePitcherSort = (key) => {
+    if (pitcherSortKey === key) setPitcherSortAsc(v => !v);
+    else { setPitcherSortKey(key); setPitcherSortAsc(false); }
+  };
+  // テーブルヘッダ定義
+  const pitcherStatHeaders = [
+    {key:'pitcher',label:'投手名'},
+    {key:'innings',label:'投球回'},
+    {key:'pitches',label:'球数'},
+    {key:'batters',label:'打者'},
+    {key:'hits',label:'安打'},
+    {key:'hr',label:'本塁打'},
+    {key:'so',label:'三振'},
+    {key:'bb',label:'四球'},
+    {key:'hbp',label:'死球'},
+    {key:'wp',label:'暴投'},
+    {key:'pb',label:'捕逸'},
+    {key:'bk',label:'ボーク'},
+    {key:'runs',label:'失点'},
+    {key:'er',label:'自責点'}
+  ];
+  // 投手成績集計
+  const pitcherStats = calcPitcherStats(pitcherFilteredRecords);
+  // ソート済みキー
+  const pitcherSortedKeys = Object.keys(pitcherStats).sort((a, b) => {
+    const getValue = (p, key) => {
+      if (!pitcherStats[p]) return -1;
+      if (key === 'pitcher') return p;
+      if (key === 'innings') {
+        // 0.1=1/3, 0.2=2/3, 0.3で1回繰り上げ
+        const n = Number(pitcherStats[p][key] || 0);
+        const intPart = Math.floor(n);
+        const fracPart = Math.round((n-intPart)*10);
+        return intPart + fracPart/3;
+      }
+      return Number(pitcherStats[p][key] || 0);
+    };
+    const va = getValue(a, pitcherSortKey);
+    const vb = getValue(b, pitcherSortKey);
+    if (va === vb) return a.localeCompare(b);
+    return pitcherSortAsc ? va-vb : vb-va;
+  });
+  // 投手試合ごとの成績（履歴）の折りたたみ状態
+  const [isPitcherRecordsOpen, setIsPitcherRecordsOpen] = useState(true);
   // 投手通算成績の折りたたみ状態
   const [isPitcherStatsOpen, setIsPitcherStatsOpen] = useState(true);
   // 成績一覧の折りたたみ状態
@@ -172,10 +239,7 @@ function App() {
   const [form, setForm] = useState(initialForm);
   // 投手データ
   const [pitcherForm, setPitcherForm] = useState(initialPitcherForm);
-  const [pitcherRecords, setPitcherRecords] = useState(() => {
-    const saved = localStorage.getItem('pitcherRecords');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // pitcherRecordsはApp関数の最初で定義済み（重複削除）
   const [pitchers, setPitchers] = useState(() => {
     const saved = localStorage.getItem('pitchers');
     return saved ? JSON.parse(saved) : [];
@@ -908,56 +972,95 @@ function App() {
         <div className="col-auto"><input className="form-control" type="text" placeholder="新しい投手名" value={newPitcher} onChange={e => setNewPitcher(e.target.value)} /></div>
         <div className="col-auto"><button className="btn btn-outline-primary" type="submit">投手追加</button></div>
       </form>
-      {/* 投手成績 折りたたみ */}
+      {/* 投手成績 折りたたみ＋期間フィルタ＋ソート＋チーム合計 */}
       <div className="d-flex align-items-center mt-4 mb-2">
         <h4 className="mb-0">投手別通算成績</h4>
+        <select className="form-select form-select-sm ms-3" style={{width: 'auto'}} value={pitcherMonthFilter} onChange={e => setPitcherMonthFilter(e.target.value)}>
+          <option value="all">全期間</option>
+          {pitcherMonthList.map(m => (
+            <option key={m} value={m}>{m.replace('-', '年')}月</option>
+          ))}
+        </select>
+        <span className="ms-2 small text-secondary">※月を選ぶとその月だけの成績を表示</span>
         <button className="btn btn-sm btn-outline-secondary ms-3" type="button" onClick={() => setIsPitcherStatsOpen(v => !v)}>
           {isPitcherStatsOpen ? '− 閉じる' : '+ 開く'}
         </button>
       </div>
+      {/* チーム合計テーブル */}
+      {isPitcherStatsOpen && (
+        <div className="table-responsive mb-2">
+          <table className="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>試合数</th>
+                <th>チーム合計</th>
+                <th>投球回</th>
+                <th>球数</th>
+                <th>打者</th>
+                <th>安打</th>
+                <th>本塁打</th>
+                <th>三振</th>
+                <th>四球</th>
+                <th>死球</th>
+                <th>暴投</th>
+                <th>捕逸</th>
+                <th>ボーク</th>
+                <th>失点</th>
+                <th>自責点</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{background:'#f9f9f9',fontWeight:'bold'}}>
+                <td>{pitcherFilteredRecords.length === 0 ? 0 : Array.from(new Set(pitcherFilteredRecords.map(r => r.date).filter(Boolean))).length}</td>
+                <td>合計</td>
+                <td>{formatInningsSum(Object.values(calcPitcherStats(pitcherFilteredRecords)).map(b=>b.innings))}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.pitches||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.batters||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.hits||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.hr||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.so||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.bb||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.hbp||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.wp||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.pb||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.bk||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.runs||0),0)}</td>
+                <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.er||0),0)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      {/* 投手別成績テーブル（ソート可） */}
       {isPitcherStatsOpen && (
         <div className="table-responsive mb-3">
           <table className="table table-bordered table-sm">
             <thead>
               <tr>
-                <th>投手名</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th>
+                {pitcherStatHeaders.map(h => (
+                  <th key={h.key} onClick={() => handlePitcherSort(h.key)} style={{cursor:'pointer'}}>
+                    {h.label}{pitcherSortKey===h.key?(pitcherSortAsc?'▲':'▼'):''}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {/* チーム合計行 */}
-              <tr style={{background:'#f9f9f9',fontWeight:'bold'}}>
-                <td>チーム合計</td>
-                <td>{formatInningsSum(Object.values(calcPitcherStats(pitcherRecords)).map(b=>b.innings))}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.pitches||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.batters||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.hits||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.hr||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.so||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.bb||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.hbp||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.wp||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.pb||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.bk||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.runs||0),0)}</td>
-                <td>{Object.values(calcPitcherStats(pitcherRecords)).reduce((a,b)=>a+Number(b.er||0),0)}</td>
-              </tr>
-              {/* 投手別集計 */}
-              {Object.entries(calcPitcherStats(pitcherRecords)).map(([p, s]) => (
+              {pitcherSortedKeys.map(p => (
                 <tr key={p}>
                   <td>{p}</td>
-                  <td>{formatInningsSum([s.innings])}</td>
-                  <td>{s.pitches}</td>
-                  <td>{s.batters}</td>
-                  <td>{s.hits}</td>
-                  <td>{s.hr}</td>
-                  <td>{s.so}</td>
-                  <td>{s.bb}</td>
-                  <td>{s.hbp}</td>
-                  <td>{s.wp}</td>
-                  <td>{s.pb}</td>
-                  <td>{s.bk}</td>
-                  <td>{s.runs}</td>
-                  <td>{s.er}</td>
+                  <td>{formatInningsSum([pitcherStats[p].innings])}</td>
+                  <td>{pitcherStats[p].pitches}</td>
+                  <td>{pitcherStats[p].batters}</td>
+                  <td>{pitcherStats[p].hits}</td>
+                  <td>{pitcherStats[p].hr}</td>
+                  <td>{pitcherStats[p].so}</td>
+                  <td>{pitcherStats[p].bb}</td>
+                  <td>{pitcherStats[p].hbp}</td>
+                  <td>{pitcherStats[p].wp}</td>
+                  <td>{pitcherStats[p].pb}</td>
+                  <td>{pitcherStats[p].bk}</td>
+                  <td>{pitcherStats[p].runs}</td>
+                  <td>{pitcherStats[p].er}</td>
                 </tr>
               ))}
             </tbody>
@@ -965,39 +1068,47 @@ function App() {
         </div>
       )}
 
-      {/* 投手成績入力履歴 */}
-      <div className="table-responsive">
-        <table className="table table-bordered table-sm">
-          <thead>
-            <tr>
-              <th>投手名</th><th>対戦相手</th><th>日付</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {pitcherRecords.map((rec, i) => (
-              <tr key={i}>
-                <td>{rec.pitcher}</td>
-                <td>{rec.opponent}</td>
-                <td>{rec.date}</td>
-                <td>{rec.innings}</td>
-                <td>{rec.pitches}</td>
-                <td>{rec.batters}</td>
-                <td>{rec.hits}</td>
-                <td>{rec.hr}</td>
-                <td>{rec.so}</td>
-                <td>{rec.bb}</td>
-                <td>{rec.hbp}</td>
-                <td>{rec.wp}</td>
-                <td>{rec.pb}</td>
-                <td>{rec.bk}</td>
-                <td>{rec.runs}</td>
-                <td>{rec.er}</td>
-                <td><button className="btn btn-danger btn-sm" onClick={() => handleDeletePitcherRecord(i)}>削除</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 投手成績入力履歴 折りたたみ */}
+      <div className="d-flex align-items-center mt-4 mb-2">
+        <h5 className="mb-0">投手試合ごとの成績</h5>
+        <button className="btn btn-sm btn-outline-secondary ms-3" type="button" onClick={() => setIsPitcherRecordsOpen(v => !v)}>
+          {isPitcherRecordsOpen ? '− 閉じる' : '+ 開く'}
+        </button>
       </div>
+      {isPitcherRecordsOpen && (
+        <div className="table-responsive">
+          <table className="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>投手名</th><th>対戦相手</th><th>日付</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pitcherRecords.map((rec, i) => (
+                <tr key={i}>
+                  <td>{rec.pitcher}</td>
+                  <td>{rec.opponent}</td>
+                  <td>{rec.date}</td>
+                  <td>{rec.innings}</td>
+                  <td>{rec.pitches}</td>
+                  <td>{rec.batters}</td>
+                  <td>{rec.hits}</td>
+                  <td>{rec.hr}</td>
+                  <td>{rec.so}</td>
+                  <td>{rec.bb}</td>
+                  <td>{rec.hbp}</td>
+                  <td>{rec.wp}</td>
+                  <td>{rec.pb}</td>
+                  <td>{rec.bk}</td>
+                  <td>{rec.runs}</td>
+                  <td>{rec.er}</td>
+                  <td><button className="btn btn-danger btn-sm" onClick={() => handleDeletePitcherRecord(i)}>削除</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
