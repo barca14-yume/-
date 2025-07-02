@@ -600,7 +600,7 @@ function App() {
 
   return (
     <div className="container mt-4">
-      <h2>少年野球スコア集計システム</h2>
+      <h2>2025シーズン個人成績</h2>
       {/* 選手リスト編集エリア */}
       <div className="mb-3">
         <label className="form-label fw-bold">選手リスト編集</label>
