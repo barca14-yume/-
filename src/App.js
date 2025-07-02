@@ -204,7 +204,8 @@ function App() {
     {key:'pb',label:'捕逸'},
     {key:'bk',label:'ボーク'},
     {key:'runs',label:'失点'},
-    {key:'er',label:'自責点'}
+    {key:'er',label:'自責点'},
+    {key:'era',label:'防御率'}
   ];
   // 投手成績集計
   const pitcherStats = calcPitcherStats(pitcherFilteredRecords);
@@ -1007,6 +1008,7 @@ function App() {
                 <th>ボーク</th>
                 <th>失点</th>
                 <th>自責点</th>
+                <th>防御率</th>
               </tr>
             </thead>
             <tbody>
@@ -1026,6 +1028,16 @@ function App() {
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.bk||0),0)}</td>
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.runs||0),0)}</td>
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.er||0),0)}</td>
+                {/* チーム合計防御率計算 */}
+                {(() => {
+                  const totalInn = Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.innings||0),0);
+                  const intPart = Math.floor(totalInn);
+                  const fracPart = Math.round((totalInn-intPart)*10);
+                  const ip = intPart + fracPart/3;
+                  const totalEr = Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.er||0),0);
+                  const era = ip > 0 ? (totalEr*9/ip).toFixed(2) : '-';
+                  return <td>{era}</td>;
+                })()}
               </tr>
             </tbody>
           </table>
@@ -1045,24 +1057,34 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {pitcherSortedKeys.map(p => (
-                <tr key={p}>
-                  <td>{p}</td>
-                  <td>{formatInningsSum([pitcherStats[p].innings])}</td>
-                  <td>{pitcherStats[p].pitches}</td>
-                  <td>{pitcherStats[p].batters}</td>
-                  <td>{pitcherStats[p].hits}</td>
-                  <td>{pitcherStats[p].hr}</td>
-                  <td>{pitcherStats[p].so}</td>
-                  <td>{pitcherStats[p].bb}</td>
-                  <td>{pitcherStats[p].hbp}</td>
-                  <td>{pitcherStats[p].wp}</td>
-                  <td>{pitcherStats[p].pb}</td>
-                  <td>{pitcherStats[p].bk}</td>
-                  <td>{pitcherStats[p].runs}</td>
-                  <td>{pitcherStats[p].er}</td>
-                </tr>
-              ))}
+              {pitcherSortedKeys.map(p => {
+                // 防御率計算
+                const inn = Number(pitcherStats[p].innings || 0);
+                const intPart = Math.floor(inn);
+                const fracPart = Math.round((inn - intPart) * 10);
+                const ip = intPart + fracPart / 3;
+                const er = Number(pitcherStats[p].er || 0);
+                const era = ip > 0 ? (er * 9 / ip).toFixed(2) : '-';
+                return (
+                  <tr key={p}>
+                    <td>{p}</td>
+                    <td>{formatInningsSum([pitcherStats[p].innings])}</td>
+                    <td>{pitcherStats[p].pitches}</td>
+                    <td>{pitcherStats[p].batters}</td>
+                    <td>{pitcherStats[p].hits}</td>
+                    <td>{pitcherStats[p].hr}</td>
+                    <td>{pitcherStats[p].so}</td>
+                    <td>{pitcherStats[p].bb}</td>
+                    <td>{pitcherStats[p].hbp}</td>
+                    <td>{pitcherStats[p].wp}</td>
+                    <td>{pitcherStats[p].pb}</td>
+                    <td>{pitcherStats[p].bk}</td>
+                    <td>{pitcherStats[p].runs}</td>
+                    <td>{pitcherStats[p].er}</td>
+                    <td>{era}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
