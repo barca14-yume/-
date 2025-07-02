@@ -54,6 +54,7 @@ function calcStats(records) {
         rbi: 0, // 打点
         run: 0, // 得点
         single: 0, // 単打
+        infieldHit: 0, // 内野安打
         double: 0, // 二塁打
         triple: 0, // 三塁打
         hr: 0,     // 本塁打
@@ -78,6 +79,7 @@ function calcStats(records) {
     if (rec.result === 'ヒット') {
       stats[rec.player].h += 1;
       if (rec.hitType === '単打') stats[rec.player].single += 1;
+      if (rec.hitType === '内野安打') stats[rec.player].infieldHit += 1;
       if (rec.hitType === '二塁打') stats[rec.player].double += 1;
       if (rec.hitType === '三塁打') stats[rec.player].triple += 1;
       if (rec.hitType === '本塁打') stats[rec.player].hr += 1;
@@ -660,6 +662,7 @@ function App() {
           <select className="form-select" name="hitType" value={form.hitType} onChange={handleChange} disabled={form.result !== 'ヒット'}>
             <option value="">安打種類</option>
             <option value="単打">単打</option>
+            <option value="内野安打">内野安打</option>
             <option value="二塁打">二塁打</option>
             <option value="三塁打">三塁打</option>
             <option value="本塁打">本塁打</option>
@@ -739,6 +742,7 @@ function App() {
           <th>守備位置</th>
           <th>失策</th>
           <th>単打</th>
+          <th>内野安打</th>
           <th>二塁打</th>
           <th>三塁打</th>
           <th>本塁打</th>
@@ -767,6 +771,7 @@ function App() {
             <td>{rec.position}</td>
             <td>{rec.error}</td>
             <td>{rec.hitType === '単打' ? 1 : 0}</td>
+            <td>{rec.hitType === '内野安打' ? 1 : 0}</td>
             <td>{rec.hitType === '二塁打' ? 1 : 0}</td>
             <td>{rec.hitType === '三塁打' ? 1 : 0}</td>
             <td>{rec.hitType === '本塁打' ? 1 : 0}</td>
@@ -809,6 +814,7 @@ function App() {
         <th>打数</th>
         <th>安打</th>
         <th>単打</th>
+        <th>内野安打</th>
         <th>二塁打</th>
         <th>三塁打</th>
         <th>本塁打</th>
@@ -834,6 +840,7 @@ function App() {
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.ab)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.h)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.single)||0), 0)}</td>
+        <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.infieldHit)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.double)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.triple)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.hr)||0), 0)}</td>
@@ -877,6 +884,7 @@ function App() {
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('ab')}>打数</th>
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('h')}>安打</th>
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('single')}>単打</th>
+              <th style={{cursor:'pointer'}} onClick={() => setSortKey('infieldHit')}>内野安打</th>
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('double')}>二塁打</th>
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('triple')}>三塁打</th>
               <th style={{cursor:'pointer'}} onClick={() => setSortKey('hr')}>本塁打</th>
@@ -901,6 +909,7 @@ function App() {
                 <td>{stats[p]?.ab ?? 0}</td>
                 <td>{stats[p]?.h ?? 0}</td>
                 <td>{stats[p]?.single ?? 0}</td>
+                <td>{stats[p]?.infieldHit ?? 0}</td>
                 <td>{stats[p]?.double ?? 0}</td>
                 <td>{stats[p]?.triple ?? 0}</td>
                 <td>{stats[p]?.hr ?? 0}</td>

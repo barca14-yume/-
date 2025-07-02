@@ -23,9 +23,13 @@ function PlayerDetail({ players, stats, records }) {
           <tr><th>打席</th><td>{playerStats.pa}</td></tr>
           <tr><th>打数</th><td>{playerStats.ab}</td></tr>
           <tr><th>安打</th><td>{playerStats.h}</td></tr>
+          <tr><th>単打</th><td>{playerStats.single}</td></tr>
+          <tr><th>内野安打</th><td>{playerStats.infieldHit}</td></tr>
+          <tr><th>二塁打</th><td>{playerStats.double}</td></tr>
+          <tr><th>三塁打</th><td>{playerStats.triple}</td></tr>
+          <tr><th>本塁打</th><td>{playerStats.hr}</td></tr>
           <tr><th>打率</th><td>{playerStats.avg}</td></tr>
           <tr><th>出塁率</th><td>{playerStats.obp}</td></tr>
-          <tr><th>本塁打</th><td>{playerStats.hr}</td></tr>
           <tr><th>打点</th><td>{playerStats.rbi}</td></tr>
           <tr><th>得点</th><td>{playerStats.run}</td></tr>
           <tr><th>盗塁</th><td>{playerStats.sb}</td></tr>
