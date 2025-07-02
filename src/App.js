@@ -114,7 +114,7 @@ function calcStats(records) {
 
 // 投手成績用初期データ
 const initialPitcherForm = {
-  pitcher: '', innings: '', pitches: '', batters: '', hits: '', hr: '', so: '', bb: '', hbp: '', wp: '', pb: '', bk: '', runs: '', er: ''
+  pitcher: '', opponent: '', date: '', innings: '', pitches: '', batters: '', hits: '', hr: '', so: '', bb: '', hbp: '', wp: '', pb: '', bk: '', runs: '', er: ''
 };
 
 function calcPitcherStats(records) {
@@ -812,11 +812,13 @@ function App() {
         <div className="col-auto">
           <select className="form-select" name="pitcher" value={pitcherForm.pitcher} onChange={handlePitcherFormChange} required>
             <option value="">投手名</option>
-            {pitchers.map((p) => (
+            {players.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
         </div>
+        <div className="col-auto"><input className="form-control" name="opponent" type="text" placeholder="対戦相手" value={pitcherForm.opponent} onChange={handlePitcherFormChange} required /></div>
+        <div className="col-auto"><input className="form-control" name="date" type="date" placeholder="日付" value={pitcherForm.date} onChange={handlePitcherFormChange} required /></div>
         <div className="col-auto"><input className="form-control" name="innings" type="number" min="0" step="0.1" placeholder="投球回" value={pitcherForm.innings} onChange={handlePitcherFormChange} required /></div>
         <div className="col-auto"><input className="form-control" name="pitches" type="number" min="0" placeholder="球数" value={pitcherForm.pitches} onChange={handlePitcherFormChange} required /></div>
         <div className="col-auto"><input className="form-control" name="batters" type="number" min="0" placeholder="打者" value={pitcherForm.batters} onChange={handlePitcherFormChange} required /></div>
@@ -872,13 +874,15 @@ function App() {
         <table className="table table-bordered table-sm">
           <thead>
             <tr>
-              <th>投手名</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th><th></th>
+              <th>投手名</th><th>対戦相手</th><th>日付</th><th>投球回</th><th>球数</th><th>打者</th><th>安打</th><th>本塁打</th><th>三振</th><th>四球</th><th>死球</th><th>暴投</th><th>捕逸</th><th>ボーク</th><th>失点</th><th>自責点</th><th></th>
             </tr>
           </thead>
           <tbody>
             {pitcherRecords.map((rec, i) => (
               <tr key={i}>
                 <td>{rec.pitcher}</td>
+                <td>{rec.opponent}</td>
+                <td>{rec.date}</td>
                 <td>{rec.innings}</td>
                 <td>{rec.pitches}</td>
                 <td>{rec.batters}</td>
