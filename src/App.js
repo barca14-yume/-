@@ -238,6 +238,49 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  // 投手成績CSVエクスポート
+  const exportPitcherRecordsCSV = () => {
+    if (pitcherRecords.length === 0) return;
+    const header = [
+      'pitcher','opponent','date','innings','pitches','batters','hits','hr','so','bb','hbp','wp','pb','bk','runs','er'
+    ];
+    const rows = pitcherRecords.map(rec =>
+      header.map(h => rec[h] ?? '').join(',')
+    );
+    const csv = [header.join(','), ...rows].join('\r\n');
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pitcher_records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 投手成績CSVインポート
+  const importPitcherRecordsCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let text = event.target.result;
+      text = text.replace(/\r\n/g, '\n');
+      const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+      if (lines.length < 2) return;
+      const header = lines[0].split(',');
+      const newRecords = lines.slice(1).map(line => {
+        const cols = line.split(',');
+        const rec = {};
+        header.forEach((h, i) => { rec[h] = cols[i] ?? ''; });
+        return rec;
+      });
+      setPitcherRecords(newRecords);
+    };
+    reader.readAsText(file);
+  };
+
+
   // 成績CSVインポート
   const importRecordsCSV = (e) => {
     const file = e.target.files[0];
@@ -807,7 +850,12 @@ function App() {
       </div>
 
       {/* 投手成績入力フォーム */}
-      <h4 className="mt-4">投手成績入力</h4>
+      <h4 className="mt-4">投手成績入力
+        <button className="btn btn-outline-secondary btn-sm ms-2" type="button" onClick={exportPitcherRecordsCSV}>CSV書き出し</button>
+        <label className="btn btn-outline-secondary btn-sm ms-2 mb-0">
+          CSV読み込み<input type="file" accept=".csv" style={{ display: 'none' }} onChange={importPitcherRecordsCSV} />
+        </label>
+      </h4>
       <form className="row g-2 align-items-end mb-3" onSubmit={handleAddPitcherRecord}>
         <div className="col-auto">
           <select className="form-select" name="pitcher" value={pitcherForm.pitcher} onChange={handlePitcherFormChange} required>
