@@ -605,11 +605,7 @@ function App() {
       <div className="mb-3">
         <label className="form-label fw-bold">選手リスト編集</label>
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          {players.map((p) => (
-            <span key={p} className="badge bg-secondary me-2">
-              {p} <button type="button" className="btn-close btn-close-white btn-sm ms-1" aria-label="削除" style={{fontSize: '0.7em'}} onClick={() => handleRemovePlayer(p)}></button>
-            </span>
-          ))}
+          
           <div className="mb-3">
             <form className="d-flex gap-2" onSubmit={handleAddPlayer}>
               <input type="text" className="form-control" style={{ maxWidth: 200 }} value={newPlayer} onChange={(e) => setNewPlayer(e.target.value)} placeholder="新規選手名" />
@@ -622,14 +618,7 @@ function App() {
                 <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={importPlayersCSV} />
               </label>
             </div>
-            <div className="mt-2">
-              {players.map((p) => (
-                <span key={p} className="badge bg-secondary me-2">
-                  {p}
-                  <button type="button" className="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" onClick={() => handleRemovePlayer(p)} style={{ fontSize: '0.7em', marginLeft: 4 }}></button>
-                </span>
-              ))}
-            </div>
+            
           </div>
         </div>
       </div>
