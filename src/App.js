@@ -760,6 +760,7 @@ function App() {
           <th>打数</th>
           <th>結果</th>
           <th>打球種類</th>
+          <th>打球方向</th>
           <th>打点</th>
           <th>得点</th>
           <th>盗塁</th>
@@ -789,7 +790,7 @@ function App() {
             <td>{rec.ab}</td>
             <td>{rec.result}</td>
             <td>{rec.battedBallType}</td>
-<td>{rec.battedDirection}</td>
+            <td>{rec.battedDirection}</td>
             <td>{rec.rbi}</td>
             <td>{rec.run}</td>
             <td>{rec.sb}</td>
