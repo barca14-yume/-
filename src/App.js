@@ -22,7 +22,7 @@ const initialForm = {
   pa: '',      // 打席
   ab: '',      // 打数
   result: '',  // 打席結果
-  hitType: '', // 安打種類
+  battedBallType: '', // 安打種類
   rbi: '',
   run: '',
   sb: '',      // 盗塁
@@ -78,11 +78,11 @@ function calcStats(records) {
     // 安打種類
     if (rec.result === 'ヒット') {
       stats[rec.player].h += 1;
-      if (rec.hitType === '単打') stats[rec.player].single += 1;
-      if (rec.hitType === '内野安打') stats[rec.player].infieldHit += 1;
-      if (rec.hitType === '二塁打') stats[rec.player].double += 1;
-      if (rec.hitType === '三塁打') stats[rec.player].triple += 1;
-      if (rec.hitType === '本塁打') stats[rec.player].hr += 1;
+      if (rec.battedBallType === '単打') stats[rec.player].single += 1;
+      if (rec.battedBallType === '内野安打') stats[rec.player].infieldHit += 1;
+      if (rec.battedBallType === '二塁打') stats[rec.player].double += 1;
+      if (rec.battedBallType === '三塁打') stats[rec.player].triple += 1;
+      if (rec.battedBallType === '本塁打') stats[rec.player].hr += 1;
     } else if (rec.result === '四球') {
       stats[rec.player].bb += 1;
     } else if (rec.result === '死球') {
@@ -310,7 +310,7 @@ function App() {
     if (records.length === 0) return;
     // ヘッダー
     const header = [
-      'player','opponent','date','pa','ab','result','hitType','rbi','battedDirection','run','sb','position','error'
+      'player','opponent','date','pa','ab','result','battedBallType','rbi','battedDirection','run','sb','position','error'
     ];
     const rows = records.map(rec =>
       header.map(h => rec[h] ?? '').join(',')
@@ -385,7 +385,13 @@ function App() {
       const newRecords = lines.slice(1).map(line => {
         const cols = line.split(',');
         const rec = {};
-        header.forEach((h, i) => { rec[h] = cols[i] ?? ''; });
+        header.forEach((h, i) => { 
+          if (h === 'hitType') {
+            rec['battedBallType'] = cols[i] ?? '';
+          } else {
+            rec[h] = cols[i] ?? '';
+          }
+        });
         return rec;
       });
       setRecords(newRecords);
@@ -658,13 +664,16 @@ function App() {
           </select>
         </div>
         <div className="col-md-2">
-          <select className="form-select" name="hitType" value={form.hitType} onChange={handleChange} disabled={form.result !== 'ヒット'}>
-            <option value="">安打種類</option>
+          <select className="form-select" name="battedBallType" value={form.battedBallType} onChange={handleChange} disabled={!(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁')}>
+            <option value="">打球種類</option>
             <option value="単打">単打</option>
             <option value="内野安打">内野安打</option>
             <option value="二塁打">二塁打</option>
             <option value="三塁打">三塁打</option>
             <option value="本塁打">本塁打</option>
+            <option value="内ゴ">内ゴ</option>
+            <option value="内飛">内飛</option>
+            <option value="外飛">外飛</option>
           </select>
         </div>
         {(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁') && (
@@ -750,7 +759,7 @@ function App() {
           <th>打席</th>
           <th>打数</th>
           <th>結果</th>
-          <th>安打種類</th>
+          <th>打球種類</th>
           <th>打点</th>
           <th>得点</th>
           <th>盗塁</th>
@@ -779,18 +788,18 @@ function App() {
             <td>{rec.pa}</td>
             <td>{rec.ab}</td>
             <td>{rec.result}</td>
-            <td>{rec.hitType}</td>
+            <td>{rec.battedBallType}</td>
 <td>{rec.battedDirection}</td>
             <td>{rec.rbi}</td>
             <td>{rec.run}</td>
             <td>{rec.sb}</td>
             <td>{rec.position}</td>
             <td>{rec.error}</td>
-            <td>{rec.hitType === '単打' ? 1 : 0}</td>
-            <td>{rec.hitType === '内野安打' ? 1 : 0}</td>
-            <td>{rec.hitType === '二塁打' ? 1 : 0}</td>
-            <td>{rec.hitType === '三塁打' ? 1 : 0}</td>
-            <td>{rec.hitType === '本塁打' ? 1 : 0}</td>
+            <td>{rec.battedBallType === '単打' ? 1 : 0}</td>
+            <td>{rec.battedBallType === '内野安打' ? 1 : 0}</td>
+            <td>{rec.battedBallType === '二塁打' ? 1 : 0}</td>
+            <td>{rec.battedBallType === '三塁打' ? 1 : 0}</td>
+            <td>{rec.battedBallType === '本塁打' ? 1 : 0}</td>
             <td>{rec.result === '四球' ? 1 : 0}</td>
             <td>{rec.result === '死球' ? 1 : 0}</td>
             <td>{rec.result === '空振三振' ? 1 : 0}</td>
