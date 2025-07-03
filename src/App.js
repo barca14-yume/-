@@ -956,6 +956,42 @@ function App() {
         </table>
       </div>
 
+      {/* 打球方向集計テーブル */}
+      {(() => {
+        const battedDirections = calcBattedDirections(filteredRecords, players);
+        return (
+          <div className="table-responsive mb-4">
+            <h5>選手ごとの打球方向集計</h5>
+            <table className="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th>選手名</th>
+                  <th>1(投)</th>
+                  <th>2(捕)</th>
+                  <th>3(一)</th>
+                  <th>4(二)</th>
+                  <th>5(三)</th>
+                  <th>6(遊)</th>
+                  <th>7(左)</th>
+                  <th>8(中)</th>
+                  <th>9(右)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {players.map(p => (
+                  <tr key={p}>
+                    <td>{p}</td>
+                    {['1','2','3','4','5','6','7','8','9'].map(dir => (
+                      <td key={dir}>{battedDirections[p][dir]}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
       <div className="mb-2 d-flex gap-2">
         <button className="btn btn-outline-success btn-sm" onClick={exportRecordsCSV} disabled={records.length === 0}>成績CSV書き出し</button>
         <label className="btn btn-outline-primary btn-sm mb-0">
@@ -1186,6 +1222,21 @@ function App() {
       </Routes>
     </Router>
   );
+}
+
+// --- 打球方向集計関数 ---
+function calcBattedDirections(records, players) {
+  // { 選手名: { 1:数, 2:数, ... 9:数 } }
+  const directions = {};
+  players.forEach(p => {
+    directions[p] = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0 };
+  });
+  records.forEach(rec => {
+    if (rec.player && directions[rec.player] && rec.battedDirection && directions[rec.player][rec.battedDirection] !== undefined) {
+      directions[rec.player][rec.battedDirection]++;
+    }
+  });
+  return directions;
 }
 
 export default App;
