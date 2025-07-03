@@ -671,12 +671,15 @@ function App() {
           <div className="col-md-2">
             <select className="form-select" name="battedDirection" value={form.battedDirection} onChange={handleChange}>
               <option value="">打球方向</option>
-              <option value="右前">右前</option>
-              <option value="右奥">右奥</option>
-              <option value="中前">中前</option>
-              <option value="中奥">中奥</option>
-              <option value="左前">左前</option>
-              <option value="左奥">左奥</option>
+              <option value="1">1(投)</option>
+              <option value="2">2(捕)</option>
+              <option value="3">3(一)</option>
+              <option value="4">4(二)</option>
+              <option value="5">5(三)</option>
+              <option value="6">6(遊)</option>
+              <option value="7">7(左)</option>
+              <option value="8">8(中)</option>
+              <option value="9">9(右)</option>
             </select>
           </div>
         )}
