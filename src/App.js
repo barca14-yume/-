@@ -958,30 +958,52 @@ function App() {
 
       {/* 打球方向集計テーブル */}
       {(() => {
+        const [battedSortKey, setBattedSortKey] = React.useState('player');
+        const [battedSortAsc, setBattedSortAsc] = React.useState(false);
         const battedDirections = calcBattedDirections(filteredRecords, players);
+        const dirKeys = ['1','2','3','4','5','6','7','8','9'];
+        // ソート用配列生成
+        let sortedPlayers = [...players];
+        sortedPlayers.sort((a, b) => {
+          if (battedSortKey === 'player') {
+            return battedSortAsc ? a.localeCompare(b) : b.localeCompare(a);
+          } else {
+            const va = battedDirections[a][battedSortKey];
+            const vb = battedDirections[b][battedSortKey];
+            if (va === vb) return a.localeCompare(b);
+            return battedSortAsc ? va - vb : vb - va;
+          }
+        });
+        const thStyle = {cursor:'pointer',userSelect:'none'};
         return (
           <div className="table-responsive mb-4">
             <h5>選手ごとの打球方向集計</h5>
             <table className="table table-bordered table-sm">
               <thead>
                 <tr>
-                  <th>選手名</th>
-                  <th>1(投)</th>
-                  <th>2(捕)</th>
-                  <th>3(一)</th>
-                  <th>4(二)</th>
-                  <th>5(三)</th>
-                  <th>6(遊)</th>
-                  <th>7(左)</th>
-                  <th>8(中)</th>
-                  <th>9(右)</th>
+                  <th style={thStyle} onClick={() => {
+                    if (battedSortKey === 'player') setBattedSortAsc(v=>!v);
+                    else { setBattedSortKey('player'); setBattedSortAsc(false); }
+                  }}>
+                    選手名{battedSortKey==='player'?(battedSortAsc?'▲':'▼'):''}
+                  </th>
+                  {dirKeys.map(dir => (
+                    <th key={dir} style={thStyle} onClick={() => {
+                      if (battedSortKey === dir) setBattedSortAsc(v=>!v);
+                      else { setBattedSortKey(dir); setBattedSortAsc(false); }
+                    }}>
+                      {dir}({
+                        { '1':'投', '2':'捕', '3':'一', '4':'二', '5':'三', '6':'遊', '7':'左', '8':'中', '9':'右' }[dir]
+                      }){battedSortKey===dir?(battedSortAsc?'▲':'▼'):''}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {players.map(p => (
+                {sortedPlayers.map(p => (
                   <tr key={p}>
                     <td>{p}</td>
-                    {['1','2','3','4','5','6','7','8','9'].map(dir => (
+                    {dirKeys.map(dir => (
                       <td key={dir}>{battedDirections[p][dir]}</td>
                     ))}
                   </tr>
