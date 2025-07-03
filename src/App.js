@@ -860,7 +860,7 @@ function App() {
     <tbody>
       <tr>
         {/* 試合数: opponentの種類数 */}
-        <td>{Array.from(new Set(filteredRecords.map(r => r.opponent).filter(Boolean))).length}</td>
+        <td>{filteredRecords.length === 0 ? 0 : Array.from(new Set(filteredRecords.map(r => `${r.date}_${r.opponent}`).filter(s => s.includes('_')))).length}</td>
         <td>合計</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.pa)||0), 0)}</td>
         <td>{Object.values(stats).reduce((sum, s) => sum + (Number(s.ab)||0), 0)}</td>
@@ -1119,7 +1119,7 @@ function App() {
             </thead>
             <tbody>
               <tr style={{background:'#f9f9f9',fontWeight:'bold'}}>
-                <td>{pitcherFilteredRecords.length === 0 ? 0 : Array.from(new Set(pitcherFilteredRecords.map(r => r.date).filter(Boolean))).length}</td>
+                <td>{pitcherFilteredRecords.length === 0 ? 0 : Array.from(new Set(pitcherFilteredRecords.map(r => `${r.date}_${r.opponent}`).filter(s => s.includes('_')))).length}</td>
                 <td>合計</td>
                 <td>{formatInningsSum(Object.values(calcPitcherStats(pitcherFilteredRecords)).map(b=>b.innings))}</td>
                 <td>{Object.values(calcPitcherStats(pitcherFilteredRecords)).reduce((a,b)=>a+Number(b.pitches||0),0)}</td>
