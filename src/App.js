@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PlayerDetail from './PlayerDetail';
+import TeamSummary from './TeamSummary';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -27,7 +28,11 @@ const initialForm = {
   run: '',
   sb: '',      // 盗塁
   position: '',// 守備位置
-  error: ''    // 失策
+  error: '',   // 失策
+  matchType: '', // 試合種別（公式戦/交流戦）
+  teamScore: '', // チーム得点
+  opponentScore: '', // 相手得点
+  gameResult: '' // 勝敗（勝ち/負け/引き分け）
 };
 
 const defaultPlayers = [
@@ -392,6 +397,12 @@ function App() {
             rec[h] = cols[i] ?? '';
           }
         });
+        // 新フィールドがCSVに無い場合は空文字で補完
+        if (!('matchType' in rec)) rec.matchType = '';
+        if (!('teamScore' in rec)) rec.teamScore = '';
+        if (!('opponentScore' in rec)) rec.opponentScore = '';
+        if (!('gameResult' in rec)) rec.gameResult = '';
+
         return rec;
       });
       setRecords(newRecords);
@@ -528,6 +539,8 @@ function App() {
 
   // 月別フィルタ用 state
   const [monthFilter, setMonthFilter] = useState('all'); // 'all' or 'YYYY-MM'
+  // チーム戦績フィルタ用 state
+  const [matchTypeFilter, setMatchTypeFilter] = useState("");
 
   // 月別フィルタリスト作成
   const monthList = Array.from(new Set(records.map(r => r.date && r.date.length >= 7 ? r.date.slice(0,7) : null).filter(Boolean))).sort().reverse();
@@ -538,7 +551,31 @@ function App() {
   const [recordDateFilter, setRecordDateFilter] = useState("");
 
   // フィルタ適用済みレコード（月別）
-  const filteredRecords = monthFilter === 'all' ? records : records.filter(r => r.date && r.date.startsWith(monthFilter));
+  // 月フィルタ時にdateの先頭7文字（YYYY-MM）で判定。不正値や空は除外
+// 月フィルタの選択肢（monthList）は「YYYY-MM」形式だが、和暦やスラッシュ区切り、全角数字にも対応
+const normalizeMonth = (str) => {
+  if (!str) return '';
+  // 全角数字→半角
+  str = str.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+  // 和暦・年・月・スラッシュ・ハイフン等を「-」に統一
+  str = str.replace(/[年月\/.]/g, '-');
+  // 連続ハイフンを1つに
+  str = str.replace(/-+/g, '-');
+  // 末尾ハイフン除去
+  str = str.replace(/-$/, '');
+  // 例: 2025-7 → 2025-07
+  const m = str.match(/(\d{4})-(\d{1,2})/);
+  if (!m) return str;
+  return m[1] + '-' + (m[2].length === 1 ? '0' + m[2] : m[2]);
+};
+const filteredRecords = monthFilter === 'all'
+  ? records.filter(r => r.date && r.date.length >= 7)
+  : records.filter(r => {
+      if (!r.date) return false;
+      const recMonth = normalizeMonth(r.date);
+      const filterMonth = normalizeMonth(monthFilter);
+      return recMonth === filterMonth;
+    });
 
   // 成績一覧テーブル用のさらに詳細なフィルタ
   const filteredRecordsForTable = filteredRecords.filter(r =>
@@ -819,6 +856,7 @@ function App() {
   </div>
 )}
 
+<TeamSummary records={filteredRecords} matchTypeFilter={matchTypeFilter} onMatchTypeFilterChange={setMatchTypeFilter} />
 <div className="d-flex align-items-center mt-4 mb-2">
   <h4 className="mb-0">選手別通算成績</h4>
   <select className="form-select form-select-sm ms-3" style={{width: 'auto'}} value={monthFilter} onChange={e => setMonthFilter(e.target.value)}>
