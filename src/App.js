@@ -313,15 +313,19 @@ function App() {
 
   const exportRecordsCSV = () => {
     if (records.length === 0) return;
-    // ヘッダー
-    const header = [
+    // ヘッダー（日本語表記）
+    const headerJP = [
+      '選手名','対戦相手','日付','打席','打数','結果','打球種類','打点','打球方向','得点','盗塁','守備位置','失策',
+      '試合種別','チーム得点','相手得点','勝敗'
+    ];
+    const headerEN = [
       'player','opponent','date','pa','ab','result','battedBallType','rbi','battedDirection','run','sb','position','error',
       'matchType','teamScore','opponentScore','gameResult'
     ];
     const rows = records.map(rec =>
-      header.map(h => rec[h] ?? '').join(',')
+      headerEN.map(h => rec[h] ?? '').join(',')
     );
-    const csv = [header.join(','), ...rows].join('\r\n');
+    const csv = [headerJP.join(','), ...rows].join('\r\n');
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -353,11 +357,12 @@ function App() {
     const gameList = Object.values(games);
     if (gameList.length === 0) return;
     
-    const header = ['date', 'opponent', 'matchType', 'gameResult', 'teamScore', 'opponentScore'];
+    const headerJP = ['日付', '対戦相手', '試合種別', '勝敗', 'チーム得点', '相手得点'];
+    const headerEN = ['date', 'opponent', 'matchType', 'gameResult', 'teamScore', 'opponentScore'];
     const rows = gameList.map(game =>
-      header.map(h => game[h] ?? '').join(',')
+      headerEN.map(h => game[h] ?? '').join(',')
     );
-    const csv = [header.join(','), ...rows].join('\r\n');
+    const csv = [headerJP.join(','), ...rows].join('\r\n');
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -371,13 +376,16 @@ function App() {
   // 投手成績CSVエクスポート
   const exportPitcherRecordsCSV = () => {
     if (pitcherRecords.length === 0) return;
-    const header = [
+    const headerJP = [
+      '投手名','対戦相手','日付','投球回','球数','打者','安打','本塁打','三振','四球','死球','暴投','捕逸','ボーク','失点','自責点'
+    ];
+    const headerEN = [
       'pitcher','opponent','date','innings','pitches','batters','hits','hr','so','bb','hbp','wp','pb','bk','runs','er'
     ];
     const rows = pitcherRecords.map(rec =>
-      header.map(h => rec[h] ?? '').join(',')
+      headerEN.map(h => rec[h] ?? '').join(',')
     );
-    const csv = [header.join(','), ...rows].join('\r\n');
+    const csv = [headerJP.join(','), ...rows].join('\r\n');
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
