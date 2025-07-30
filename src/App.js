@@ -315,19 +315,55 @@ function App() {
     if (records.length === 0) return;
     // ヘッダー
     const header = [
-      'player','opponent','date','pa','ab','result','battedBallType','rbi','battedDirection','run','sb','position','error'
+      'player','opponent','date','pa','ab','result','battedBallType','rbi','battedDirection','run','sb','position','error',
+      'matchType','teamScore','opponentScore','gameResult'
     ];
     const rows = records.map(rec =>
       header.map(h => rec[h] ?? '').join(',')
     );
     const csv = [header.join(','), ...rows].join('\r\n');
-    // UTF-8 BOM付き（Excel対応）
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // チーム戦績サマリCSVエクスポート
+  const exportTeamSummaryCSV = () => {
+    // 試合ごとの戦績を抽出
+    const games = {};
+    records.forEach(rec => {
+      if (!rec.date || !rec.opponent) return;
+      const key = `${rec.date}_${rec.opponent}`;
+      if (!games[key]) {
+        games[key] = {
+          date: rec.date,
+          opponent: rec.opponent,
+          matchType: rec.matchType || '',
+          gameResult: rec.gameResult || '',
+          teamScore: rec.teamScore || '',
+          opponentScore: rec.opponentScore || '',
+        };
+      }
+    });
+    const gameList = Object.values(games);
+    if (gameList.length === 0) return;
+    
+    const header = ['date', 'opponent', 'matchType', 'gameResult', 'teamScore', 'opponentScore'];
+    const rows = gameList.map(game =>
+      header.map(h => game[h] ?? '').join(',')
+    );
+    const csv = [header.join(','), ...rows].join('\r\n');
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'team_summary.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -408,6 +444,46 @@ function App() {
       setRecords(newRecords);
     };
     // Shift_JIS優先で読んでみる
+    try {
+      reader.readAsText(file, 'shift_jis');
+    } catch {
+      reader.readAsText(file, 'utf-8');
+    }
+  };
+
+  // チーム戦績サマリCSVインポート
+  const importTeamSummaryCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let text = event.target.result;
+      text = text.replace(/\r\n/g, '\n');
+      const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+      if (lines.length < 2) return;
+      const header = lines[0].split(',');
+      const teamGames = lines.slice(1).map(line => {
+        const cols = line.split(',');
+        const game = {};
+        header.forEach((h, i) => { game[h] = cols[i] ?? ''; });
+        return game;
+      });
+      
+      // 既存のrecordsにチーム戦績情報をマージ
+      const updatedRecords = [...records];
+      teamGames.forEach(game => {
+        // 同じ日付・対戦相手のrecordを探して更新
+        updatedRecords.forEach(rec => {
+          if (rec.date === game.date && rec.opponent === game.opponent) {
+            rec.matchType = game.matchType || rec.matchType;
+            rec.gameResult = game.gameResult || rec.gameResult;
+            rec.teamScore = game.teamScore || rec.teamScore;
+            rec.opponentScore = game.opponentScore || rec.opponentScore;
+          }
+        });
+      });
+      setRecords(updatedRecords);
+    };
     try {
       reader.readAsText(file, 'shift_jis');
     } catch {
@@ -667,85 +743,124 @@ const filteredRecords = monthFilter === 'all'
                 <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={importPlayersCSV} />
               </label>
             </div>
+            <div className="mt-2 mb-2 d-flex gap-2">
+              <button className="btn btn-outline-success btn-sm" onClick={exportTeamSummaryCSV}>チーム戦績CSV書き出し</button>
+              <label className="btn btn-outline-warning btn-sm mb-0">
+                チーム戦績CSV読み込み
+                <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={importTeamSummaryCSV} />
+              </label>
+            </div>
             
           </div>
         </div>
       </div>
 
-      <form className="row g-3 mb-4" onSubmit={handleSubmit}>
-        <div className="col-md-2">
-          <select className="form-select" name="player" value={form.player} onChange={handleChange} required>
-            <option value="">選手を選択</option>
-            {players.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-2">
-          <input type="text" className="form-control" name="opponent" value={form.opponent} onChange={handleChange} placeholder="対戦相手" />
-        </div>
-        <div className="col-md-2">
-          <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
-        </div>
-        <div className="col-md-2">
-          <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
-            <option value="">打席結果</option>
-            <option value="ヒット">ヒット</option>
-            <option value="四球">四球</option>
-            <option value="死球">死球</option>
-            <option value="空振三振">空振三振</option>
-            <option value="見逃三振">見逃三振</option>
-            <option value="三振">三振</option>
-            <option value="アウト">アウト</option>
-            <option value="エラー出塁">エラー出塁</option>
-          </select>
-        </div>
-        <div className="col-md-2">
-          <select className="form-select" name="battedBallType" value={form.battedBallType} onChange={handleChange} disabled={!(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁')}>
-            <option value="">打球種類</option>
-            <option value="単打">単打</option>
-            <option value="内野安打">内野安打</option>
-            <option value="二塁打">二塁打</option>
-            <option value="三塁打">三塁打</option>
-            <option value="本塁打">本塁打</option>
-            <option value="内ゴ">内ゴ</option>
-            <option value="内飛">内飛</option>
-            <option value="外飛">外飛</option>
-          </select>
-        </div>
-        {(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁') && (
+      <form className="mb-4" onSubmit={handleSubmit}>
+        {/* 個人成績入力エリア */}
+        <div className="row g-3 mb-3">
           <div className="col-md-2">
-            <select className="form-select" name="battedDirection" value={form.battedDirection} onChange={handleChange}>
-              <option value="">打球方向</option>
-              <option value="1">1(投)</option>
-              <option value="2">2(捕)</option>
-              <option value="3">3(一)</option>
-              <option value="4">4(二)</option>
-              <option value="5">5(三)</option>
-              <option value="6">6(遊)</option>
-              <option value="7">7(左)</option>
-              <option value="8">8(中)</option>
-              <option value="9">9(右)</option>
+            <select className="form-select" name="player" value={form.player} onChange={handleChange} required>
+              <option value="">選手を選択</option>
+              {players.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </div>
-        )}
-        <div className="col-md-1">
-          <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
+          <div className="col-md-2">
+            <input type="text" className="form-control" name="opponent" value={form.opponent} onChange={handleChange} placeholder="対戦相手" />
+          </div>
+          <div className="col-md-2">
+            <input type="date" className="form-control" name="date" value={form.date} onChange={handleChange} />
+          </div>
+          <div className="col-md-2">
+            <select className="form-select" name="result" value={form.result} onChange={handleChange} required>
+              <option value="">打席結果</option>
+              <option value="ヒット">ヒット</option>
+              <option value="四球">四球</option>
+              <option value="死球">死球</option>
+              <option value="空振三振">空振三振</option>
+              <option value="見逃三振">見逃三振</option>
+              <option value="三振">三振</option>
+              <option value="アウト">アウト</option>
+              <option value="エラー出塁">エラー出塁</option>
+            </select>
+          </div>
+          <div className="col-md-2">
+            <select className="form-select" name="battedBallType" value={form.battedBallType} onChange={handleChange} disabled={!(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁')}>
+              <option value="">打球種類</option>
+              <option value="単打">単打</option>
+              <option value="内野安打">内野安打</option>
+              <option value="二塁打">二塁打</option>
+              <option value="三塁打">三塁打</option>
+              <option value="本塁打">本塁打</option>
+              <option value="内ゴ">内ゴ</option>
+              <option value="内飛">内飛</option>
+              <option value="外飛">外飛</option>
+            </select>
+          </div>
+          {(form.result === 'ヒット' || form.result === 'アウト' || form.result === 'エラー出塁') && (
+            <div className="col-md-2">
+              <select className="form-select" name="battedDirection" value={form.battedDirection} onChange={handleChange}>
+                <option value="">打球方向</option>
+                <option value="1">1(投)</option>
+                <option value="2">2(捕)</option>
+                <option value="3">3(一)</option>
+                <option value="4">4(二)</option>
+                <option value="5">5(三)</option>
+                <option value="6">6(遊)</option>
+                <option value="7">7(左)</option>
+                <option value="8">8(中)</option>
+                <option value="9">9(右)</option>
+              </select>
+            </div>
+          )}
+          <div className="col-md-1">
+            <input type="number" className="form-control" name="rbi" value={form.rbi} onChange={handleChange} placeholder="打点" min="0" />
+          </div>
+          <div className="col-md-1">
+            <input type="number" className="form-control" name="run" value={form.run} onChange={handleChange} placeholder="得点" min="0" />
+          </div>
+          <div className="col-md-1">
+            <input type="number" className="form-control" name="sb" value={form.sb} onChange={handleChange} placeholder="盗塁" min="0" />
+          </div>
+          <div className="col-md-1">
+            <input type="text" className="form-control" name="position" value={form.position} onChange={handleChange} placeholder="守備位置" />
+          </div>
+          <div className="col-md-1">
+            <input type="number" className="form-control" name="error" value={form.error} onChange={handleChange} placeholder="失策" min="0" />
+          </div>
         </div>
-        <div className="col-md-1">
-          <input type="number" className="form-control" name="run" value={form.run} onChange={handleChange} placeholder="得点" min="0" />
-        </div>
-        <div className="col-md-1">
-          <input type="number" className="form-control" name="sb" value={form.sb} onChange={handleChange} placeholder="盗塁" min="0" />
-        </div>
-        <div className="col-md-1">
-          <input type="text" className="form-control" name="position" value={form.position} onChange={handleChange} placeholder="守備位置" />
-        </div>
-        <div className="col-md-1">
-          <input type="number" className="form-control" name="error" value={form.error} onChange={handleChange} placeholder="失策" min="0" />
-        </div>
-        <div className="col-md-2 d-grid">
-          <button type="submit" className="btn btn-primary">追加</button>
+        
+        {/* チーム戦績入力エリア */}
+        <div className="row g-2 align-items-end mb-3">
+          <div className="col-auto">
+            <label className="form-label mb-0">試合種別</label>
+            <select className="form-select form-select-sm" name="matchType" value={form.matchType} onChange={handleChange}>
+              <option value="">選択</option>
+              <option value="公式戦">公式戦</option>
+              <option value="交流戦">交流戦</option>
+            </select>
+          </div>
+          <div className="col-auto">
+            <label className="form-label mb-0">得点</label>
+            <input type="number" className="form-control form-control-sm" name="teamScore" value={form.teamScore} onChange={handleChange} min="0" />
+          </div>
+          <div className="col-auto">
+            <label className="form-label mb-0">失点</label>
+            <input type="number" className="form-control form-control-sm" name="opponentScore" value={form.opponentScore} onChange={handleChange} min="0" />
+          </div>
+          <div className="col-auto">
+            <label className="form-label mb-0">勝敗</label>
+            <select className="form-select form-select-sm" name="gameResult" value={form.gameResult} onChange={handleChange}>
+              <option value="">選択</option>
+              <option value="勝ち">勝ち</option>
+              <option value="負け">負け</option>
+              <option value="引き分け">引き分け</option>
+            </select>
+          </div>
+          <div className="col-auto">
+            <button type="submit" className="btn btn-primary">追加</button>
+          </div>
         </div>
       </form>
 
